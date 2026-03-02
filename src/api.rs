@@ -159,6 +159,16 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn pow(&mut self) -> ApiResponse {
+        let result = self.calculator.pow();
+        self.wrap(result)
+    }
+
+    pub fn percent(&mut self) -> ApiResponse {
+        let result = self.calculator.percent();
+        self.wrap(result)
+    }
+
     pub fn add(&mut self) -> ApiResponse {
         let result = self.calculator.add();
         self.wrap(result)
@@ -194,6 +204,91 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn cos(&mut self) -> ApiResponse {
+        let result = self.calculator.cos();
+        self.wrap(result)
+    }
+
+    pub fn tan(&mut self) -> ApiResponse {
+        let result = self.calculator.tan();
+        self.wrap(result)
+    }
+
+    pub fn asin(&mut self) -> ApiResponse {
+        let result = self.calculator.asin();
+        self.wrap(result)
+    }
+
+    pub fn acos(&mut self) -> ApiResponse {
+        let result = self.calculator.acos();
+        self.wrap(result)
+    }
+
+    pub fn atan(&mut self) -> ApiResponse {
+        let result = self.calculator.atan();
+        self.wrap(result)
+    }
+
+    pub fn sinh(&mut self) -> ApiResponse {
+        let result = self.calculator.sinh();
+        self.wrap(result)
+    }
+
+    pub fn cosh(&mut self) -> ApiResponse {
+        let result = self.calculator.cosh();
+        self.wrap(result)
+    }
+
+    pub fn tanh(&mut self) -> ApiResponse {
+        let result = self.calculator.tanh();
+        self.wrap(result)
+    }
+
+    pub fn asinh(&mut self) -> ApiResponse {
+        let result = self.calculator.asinh();
+        self.wrap(result)
+    }
+
+    pub fn acosh(&mut self) -> ApiResponse {
+        let result = self.calculator.acosh();
+        self.wrap(result)
+    }
+
+    pub fn atanh(&mut self) -> ApiResponse {
+        let result = self.calculator.atanh();
+        self.wrap(result)
+    }
+
+    pub fn exp(&mut self) -> ApiResponse {
+        let result = self.calculator.exp();
+        self.wrap(result)
+    }
+
+    pub fn log10(&mut self) -> ApiResponse {
+        let result = self.calculator.log10();
+        self.wrap(result)
+    }
+
+    pub fn gamma(&mut self) -> ApiResponse {
+        let result = self.calculator.gamma();
+        self.wrap(result)
+    }
+
+    pub fn erf(&mut self) -> ApiResponse {
+        let result = self.calculator.erf();
+        self.wrap(result)
+    }
+
+    pub fn push_pi(&mut self) -> ApiResponse {
+        self.calculator.push_pi();
+        self.success()
+    }
+
+    pub fn push_e(&mut self) -> ApiResponse {
+        self.calculator.push_e();
+        self.success()
+    }
+
     pub fn determinant(&mut self) -> ApiResponse {
         let result = self.calculator.determinant();
         self.wrap(result)
@@ -216,6 +311,21 @@ impl CalculatorApi {
 
     pub fn push_identity(&mut self, size: usize) -> ApiResponse {
         let result = self.calculator.push_identity(size);
+        self.wrap(result)
+    }
+
+    pub fn memory_store(&mut self, register: usize) -> ApiResponse {
+        let result = self.calculator.memory_store(register);
+        self.wrap(result)
+    }
+
+    pub fn memory_recall(&mut self, register: usize) -> ApiResponse {
+        let result = self.calculator.memory_recall(register);
+        self.wrap(result)
+    }
+
+    pub fn memory_clear(&mut self, register: usize) -> ApiResponse {
+        let result = self.calculator.memory_clear(register);
         self.wrap(result)
     }
 
@@ -294,6 +404,14 @@ fn to_api_error(error: CalcError) -> ApiError {
             code: "type_mismatch".to_string(),
             message,
         },
+        CalcError::InvalidRegister(register) => ApiError {
+            code: "invalid_register".to_string(),
+            message: format!("invalid memory register index: {register}"),
+        },
+        CalcError::EmptyRegister(register) => ApiError {
+            code: "empty_register".to_string(),
+            message: format!("memory register is empty: {register}"),
+        },
         CalcError::DomainError(message) => ApiError {
             code: "domain_error".to_string(),
             message,
@@ -346,6 +464,14 @@ mod wasm {
             serde_json::to_string(&self.inner.add()).expect("response serialization should succeed")
         }
 
+        pub fn pow(&mut self) -> String {
+            serde_json::to_string(&self.inner.pow()).expect("response serialization should succeed")
+        }
+
+        pub fn percent(&mut self) -> String {
+            serde_json::to_string(&self.inner.percent()).expect("response serialization should succeed")
+        }
+
         pub fn drop(&mut self) -> String {
             serde_json::to_string(&self.inner.drop()).expect("response serialization should succeed")
         }
@@ -384,6 +510,74 @@ mod wasm {
 
         pub fn sin(&mut self) -> String {
             serde_json::to_string(&self.inner.sin()).expect("response serialization should succeed")
+        }
+
+        pub fn cos(&mut self) -> String {
+            serde_json::to_string(&self.inner.cos()).expect("response serialization should succeed")
+        }
+
+        pub fn tan(&mut self) -> String {
+            serde_json::to_string(&self.inner.tan()).expect("response serialization should succeed")
+        }
+
+        pub fn asin(&mut self) -> String {
+            serde_json::to_string(&self.inner.asin()).expect("response serialization should succeed")
+        }
+
+        pub fn acos(&mut self) -> String {
+            serde_json::to_string(&self.inner.acos()).expect("response serialization should succeed")
+        }
+
+        pub fn atan(&mut self) -> String {
+            serde_json::to_string(&self.inner.atan()).expect("response serialization should succeed")
+        }
+
+        pub fn sinh(&mut self) -> String {
+            serde_json::to_string(&self.inner.sinh()).expect("response serialization should succeed")
+        }
+
+        pub fn cosh(&mut self) -> String {
+            serde_json::to_string(&self.inner.cosh()).expect("response serialization should succeed")
+        }
+
+        pub fn tanh(&mut self) -> String {
+            serde_json::to_string(&self.inner.tanh()).expect("response serialization should succeed")
+        }
+
+        pub fn asinh(&mut self) -> String {
+            serde_json::to_string(&self.inner.asinh()).expect("response serialization should succeed")
+        }
+
+        pub fn acosh(&mut self) -> String {
+            serde_json::to_string(&self.inner.acosh()).expect("response serialization should succeed")
+        }
+
+        pub fn atanh(&mut self) -> String {
+            serde_json::to_string(&self.inner.atanh()).expect("response serialization should succeed")
+        }
+
+        pub fn exp(&mut self) -> String {
+            serde_json::to_string(&self.inner.exp()).expect("response serialization should succeed")
+        }
+
+        pub fn log10(&mut self) -> String {
+            serde_json::to_string(&self.inner.log10()).expect("response serialization should succeed")
+        }
+
+        pub fn gamma(&mut self) -> String {
+            serde_json::to_string(&self.inner.gamma()).expect("response serialization should succeed")
+        }
+
+        pub fn erf(&mut self) -> String {
+            serde_json::to_string(&self.inner.erf()).expect("response serialization should succeed")
+        }
+
+        pub fn push_pi(&mut self) -> String {
+            serde_json::to_string(&self.inner.push_pi()).expect("response serialization should succeed")
+        }
+
+        pub fn push_e(&mut self) -> String {
+            serde_json::to_string(&self.inner.push_e()).expect("response serialization should succeed")
         }
 
         pub fn set_angle_mode_deg(&mut self) -> String {
@@ -453,6 +647,21 @@ mod wasm {
 
         pub fn push_identity(&mut self, size: usize) -> String {
             serde_json::to_string(&self.inner.push_identity(size))
+                .expect("response serialization should succeed")
+        }
+
+        pub fn memory_store(&mut self, register: usize) -> String {
+            serde_json::to_string(&self.inner.memory_store(register))
+                .expect("response serialization should succeed")
+        }
+
+        pub fn memory_recall(&mut self, register: usize) -> String {
+            serde_json::to_string(&self.inner.memory_recall(register))
+                .expect("response serialization should succeed")
+        }
+
+        pub fn memory_clear(&mut self, register: usize) -> String {
+            serde_json::to_string(&self.inner.memory_clear(register))
                 .expect("response serialization should succeed")
         }
     }

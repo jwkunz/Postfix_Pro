@@ -265,6 +265,20 @@
       gap: 8px;
     }
 
+    .memory-tools {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .memory-row {
+      display: grid;
+      grid-template-columns: 84px 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
     @media (max-width: 860px) {
       .app {
         grid-template-columns: 1fr;
@@ -365,6 +379,39 @@
           <button class="fn" id="push-complex-btn">Push a+bi</button>
         </div>
       </section>
+      <section class="complex-tools">
+        <h3>Advanced Scientific</h3>
+        <div class="matrix-actions" id="advanced-actions">
+          <button class="fn" data-action="cos">cos</button>
+          <button class="fn" data-action="tan">tan</button>
+          <button class="fn" data-action="exp">exp</button>
+          <button class="fn" data-action="log10">log10</button>
+          <button class="fn" data-action="pow">pow</button>
+          <button class="fn" data-action="percent">%</button>
+          <button class="fn" data-action="asin">asin</button>
+          <button class="fn" data-action="acos">acos</button>
+          <button class="fn" data-action="atan">atan</button>
+          <button class="fn" data-action="sinh">sinh</button>
+          <button class="fn" data-action="cosh">cosh</button>
+          <button class="fn" data-action="tanh">tanh</button>
+          <button class="fn" data-action="asinh">asinh</button>
+          <button class="fn" data-action="acosh">acosh</button>
+          <button class="fn" data-action="atanh">atanh</button>
+          <button class="fn" data-action="gamma">gamma</button>
+          <button class="fn" data-action="erf">erf</button>
+          <button class="fn" data-action="pi">pi</button>
+          <button class="fn" data-action="e">e</button>
+        </div>
+      </section>
+      <section class="memory-tools">
+        <h3>Memory A-Z</h3>
+        <div class="memory-row">
+          <input id="memory-register-input" type="text" maxlength="1" value="A" aria-label="Memory register">
+          <button class="fn" id="memory-store-btn">STO</button>
+          <button class="fn" id="memory-recall-btn">RCL</button>
+          <button class="danger" id="memory-clear-btn">CLR</button>
+        </div>
+      </section>
       <p class="hint" id="runtime-hint">
         Loading WASM runtime...
       </p>
@@ -392,6 +439,11 @@
     const complexReInput = document.getElementById("complex-re-input");
     const complexImInput = document.getElementById("complex-im-input");
     const pushComplexBtn = document.getElementById("push-complex-btn");
+    const advancedActions = document.getElementById("advanced-actions");
+    const memoryRegisterInput = document.getElementById("memory-register-input");
+    const memoryStoreBtn = document.getElementById("memory-store-btn");
+    const memoryRecallBtn = document.getElementById("memory-recall-btn");
+    const memoryClearBtn = document.getElementById("memory-clear-btn");
 
     let wasmCalc = null;
     let entryBuffer = "";
@@ -551,6 +603,15 @@
       call("push_identity", size);
     }
 
+    function parseRegisterIndex() {
+      const raw = String(memoryRegisterInput.value || "").trim().toUpperCase();
+      if (!/^[A-Z]$/.test(raw)) {
+        setError("memory register must be a single letter A-Z");
+        return null;
+      }
+      return raw.charCodeAt(0) - 65;
+    }
+
     function handleAction(action) {
       if (!wasmCalc) return;
       if (action === "decimal") {
@@ -602,12 +663,22 @@
         pushIdentityFromInput();
         return;
       }
+      if (action === "pi") {
+        call("push_pi");
+        return;
+      }
+      if (action === "e") {
+        call("push_e");
+        return;
+      }
 
       const opMap = {
         drop: "drop",
         dup: "dup",
         swap: "swap",
         rot: "rot",
+        pow: "pow",
+        percent: "percent",
         add: "add",
         sub: "sub",
         mul: "mul",
@@ -615,6 +686,21 @@
         sqrt: "sqrt",
         ln: "ln",
         sin: "sin",
+        cos: "cos",
+        tan: "tan",
+        asin: "asin",
+        acos: "acos",
+        atan: "atan",
+        sinh: "sinh",
+        cosh: "cosh",
+        tanh: "tanh",
+        asinh: "asinh",
+        acosh: "acosh",
+        atanh: "atanh",
+        exp: "exp",
+        log10: "log10",
+        gamma: "gamma",
+        erf: "erf",
         inverse: "inverse",
         transpose: "transpose",
         det: "determinant"
@@ -634,6 +720,12 @@
         syncEntry();
         return;
       }
+      handleAction(button.dataset.action);
+    });
+
+    advancedActions.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
       handleAction(button.dataset.action);
     });
 
@@ -670,6 +762,27 @@
     pushComplexBtn.addEventListener("click", () => {
       if (!wasmCalc) return;
       pushComplexFromInputs();
+    });
+
+    memoryStoreBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      const index = parseRegisterIndex();
+      if (index === null) return;
+      call("memory_store", index);
+    });
+
+    memoryRecallBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      const index = parseRegisterIndex();
+      if (index === null) return;
+      call("memory_recall", index);
+    });
+
+    memoryClearBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      const index = parseRegisterIndex();
+      if (index === null) return;
+      call("memory_clear", index);
     });
 
     window.addEventListener("keydown", (event) => {

@@ -1,3 +1,5 @@
+use num_complex::Complex64;
+
 pub mod api;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -58,6 +60,8 @@ pub enum CalcError {
     InvalidInput(String),
     DimensionMismatch { expected: usize, actual: usize },
     TypeMismatch(String),
+    InvalidRegister(usize),
+    EmptyRegister(usize),
     DomainError(String),
     DivideByZero,
     SingularMatrix(String),
@@ -104,6 +108,14 @@ impl Calculator {
 
     pub fn set_angle_mode(&mut self, mode: AngleMode) {
         self.state.angle_mode = mode;
+    }
+
+    pub fn push_pi(&mut self) {
+        self.state.stack.push(Value::Real(std::f64::consts::PI));
+    }
+
+    pub fn push_e(&mut self) {
+        self.state.stack.push(Value::Real(std::f64::consts::E));
     }
 
     pub fn entry_set(&mut self, value: &str) {
@@ -347,6 +359,234 @@ impl Calculator {
         })
     }
 
+    pub fn asin(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) if !(-1.0..=1.0).contains(v) => Err(CalcError::DomainError(
+                "asin is undefined for real values outside [-1, 1]".to_string(),
+            )),
+            Value::Real(v) => {
+                let radians = v.asin();
+                let output = match mode {
+                    AngleMode::Deg => radians.to_degrees(),
+                    AngleMode::Rad => radians,
+                };
+                Ok(Value::Real(output))
+            }
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).asin(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "asin does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn acos(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) if !(-1.0..=1.0).contains(v) => Err(CalcError::DomainError(
+                "acos is undefined for real values outside [-1, 1]".to_string(),
+            )),
+            Value::Real(v) => {
+                let radians = v.acos();
+                let output = match mode {
+                    AngleMode::Deg => radians.to_degrees(),
+                    AngleMode::Rad => radians,
+                };
+                Ok(Value::Real(output))
+            }
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).acos(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "acos does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn atan(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let radians = v.atan();
+                let output = match mode {
+                    AngleMode::Deg => radians.to_degrees(),
+                    AngleMode::Rad => radians,
+                };
+                Ok(Value::Real(output))
+            }
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).atan(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "atan does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn sinh(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(v.sinh())),
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).sinh(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "sinh does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn cosh(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(v.cosh())),
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).cosh(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "cosh does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn tanh(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(v.tanh())),
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).tanh(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "tanh does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn asinh(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(v.asinh())),
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).asinh(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "asinh does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn acosh(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) if *v < 1.0 => Err(CalcError::DomainError(
+                "acosh is undefined for real values below 1".to_string(),
+            )),
+            Value::Real(v) => Ok(Value::Real(v.acosh())),
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).acosh(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "acosh does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn atanh(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) if v.abs() >= 1.0 => Err(CalcError::DomainError(
+                "atanh is undefined for real values with |x| >= 1".to_string(),
+            )),
+            Value::Real(v) => Ok(Value::Real(v.atanh())),
+            Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
+                Self::to_complex64(*c).atanh(),
+            ))),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "atanh does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn log10(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) if *v <= 0.0 => Err(CalcError::DomainError(
+                "log10 is undefined for non-positive real values".to_string(),
+            )),
+            Value::Real(v) => Ok(Value::Real(v.log10())),
+            Value::Complex(c) => {
+                let ln10 = Complex64::new(10.0, 0.0).ln();
+                let out = Self::to_complex64(*c).ln() / ln10;
+                Ok(Value::Complex(Self::from_complex64(out)))
+            }
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "log10 does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn gamma(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(Self::real_gamma(*v))),
+            Value::Complex(_) => Err(CalcError::TypeMismatch(
+                "gamma currently supports real values only".to_string(),
+            )),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "gamma does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn erf(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(Self::real_erf(*v))),
+            Value::Complex(_) => Err(CalcError::TypeMismatch(
+                "erf currently supports real values only".to_string(),
+            )),
+            Value::Matrix(_) => Err(CalcError::TypeMismatch(
+                "erf does not support matrix values".to_string(),
+            )),
+        })
+    }
+
+    pub fn pow(&mut self) -> Result<(), CalcError> {
+        self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Real(base), Value::Real(exp)) => Ok(Value::Real(base.powf(*exp))),
+            _ => {
+                let left = Self::as_complex(left, "pow")?;
+                let right = Self::as_complex(right, "pow")?;
+                let out = Self::to_complex64(left).powc(Self::to_complex64(right));
+                Ok(Value::Complex(Self::from_complex64(out)))
+            }
+        })
+    }
+
+    pub fn percent(&mut self) -> Result<(), CalcError> {
+        self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Real(base), Value::Real(percent)) => Ok(Value::Real(base * percent / 100.0)),
+            _ => Err(CalcError::TypeMismatch(
+                "percent currently supports real values only".to_string(),
+            )),
+        })
+    }
+
+    pub fn memory_store(&mut self, register: usize) -> Result<(), CalcError> {
+        self.require_stack_len(1)?;
+        let index = Self::validate_register(register)?;
+        self.state.memory[index] = self.state.stack.last().cloned();
+        Ok(())
+    }
+
+    pub fn memory_recall(&mut self, register: usize) -> Result<(), CalcError> {
+        let index = Self::validate_register(register)?;
+        let value = self.state.memory[index]
+            .clone()
+            .ok_or(CalcError::EmptyRegister(register))?;
+        self.state.stack.push(value);
+        Ok(())
+    }
+
+    pub fn memory_clear(&mut self, register: usize) -> Result<(), CalcError> {
+        let index = Self::validate_register(register)?;
+        self.state.memory[index] = None;
+        Ok(())
+    }
+
     pub fn transpose(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_transpose(matrix))),
@@ -475,6 +715,66 @@ impl Calculator {
             re: value.re.cos() * value.im.cosh(),
             im: -value.re.sin() * value.im.sinh(),
         }
+    }
+
+    fn to_complex64(value: Complex) -> Complex64 {
+        Complex64::new(value.re, value.im)
+    }
+
+    fn from_complex64(value: Complex64) -> Complex {
+        Complex {
+            re: value.re,
+            im: value.im,
+        }
+    }
+
+    fn validate_register(register: usize) -> Result<usize, CalcError> {
+        if register >= 26 {
+            return Err(CalcError::InvalidRegister(register));
+        }
+        Ok(register)
+    }
+
+    fn real_erf(x: f64) -> f64 {
+        // Abramowitz-Stegun 7.1.26 approximation.
+        let sign = if x < 0.0 { -1.0 } else { 1.0 };
+        let x = x.abs();
+        let t = 1.0 / (1.0 + 0.3275911 * x);
+        let a1 = 0.254_829_592;
+        let a2 = -0.284_496_736;
+        let a3 = 1.421_413_741;
+        let a4 = -1.453_152_027;
+        let a5 = 1.061_405_429;
+        let poly = ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t;
+        sign * (1.0 - poly * (-x * x).exp())
+    }
+
+    fn real_gamma(z: f64) -> f64 {
+        // Lanczos approximation with reflection formula.
+        if z < 0.5 {
+            let pi = std::f64::consts::PI;
+            return pi / ((pi * z).sin() * Self::real_gamma(1.0 - z));
+        }
+
+        let p: [f64; 9] = [
+            0.999_999_999_999_809_9,
+            676.520_368_121_885_1,
+            -1_259.139_216_722_402_8,
+            771.323_428_777_653_1,
+            -176.615_029_162_140_6,
+            12.507_343_278_686_905,
+            -0.138_571_095_265_720_12,
+            0.000_009_984_369_578_019_572,
+            0.000_000_150_563_273_514_931_16,
+        ];
+        let g = 7.0;
+        let mut x = p[0];
+        let zm1 = z - 1.0;
+        for (i, coeff) in p.iter().enumerate().skip(1) {
+            x += coeff / (zm1 + i as f64);
+        }
+        let t = zm1 + g + 0.5;
+        (2.0 * std::f64::consts::PI).sqrt() * t.powf(zm1 + 0.5) * (-t).exp() * x
     }
 
     fn matrix_add(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
