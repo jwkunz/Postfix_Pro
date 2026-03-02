@@ -171,6 +171,53 @@
       line-height: 1.5;
     }
 
+    .matrix-tools {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .matrix-tools h3 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .matrix-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .matrix-grid label {
+      display: grid;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .matrix-grid textarea {
+      width: 100%;
+      min-height: 74px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      padding: 8px;
+      background: #fff;
+    }
+
+    .matrix-actions {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     @media (max-width: 860px) {
       .app {
         grid-template-columns: 1fr;
@@ -224,13 +271,31 @@
         <button data-digit="0">0</button>
         <button data-action="decimal">.</button>
         <button class="op wide" data-action="enter">Enter</button>
-        <button class="fn" data-action="noop">solve</button>
+        <button class="fn" data-action="solve">solve</button>
       </div>
     </section>
 
     <section class="panel">
       <h2 class="stack-title">Stack (Top First)</h2>
       <ol id="stack-list" class="stack"></ol>
+      <section class="matrix-tools">
+        <h3>Matrix Builder</h3>
+        <div class="matrix-grid">
+          <label>
+            Matrix A
+            <textarea id="matrix-a-input" placeholder="1 2&#10;3 4"></textarea>
+          </label>
+          <label>
+            Matrix B
+            <textarea id="matrix-b-input" placeholder="5&#10;6"></textarea>
+          </label>
+        </div>
+        <div class="matrix-actions">
+          <button class="fn" id="push-a-btn">Push A</button>
+          <button class="fn" id="push-b-btn">Push B</button>
+          <button class="op" id="solve-btn">Solve A*x=B</button>
+        </div>
+      </section>
       <p class="hint" id="runtime-hint">
         Loading WASM runtime...
       </p>
@@ -244,6 +309,11 @@
     const stackList = document.getElementById("stack-list");
     const runtimeHint = document.getElementById("runtime-hint");
     const keypad = document.getElementById("keypad");
+    const matrixAInput = document.getElementById("matrix-a-input");
+    const matrixBInput = document.getElementById("matrix-b-input");
+    const pushABtn = document.getElementById("push-a-btn");
+    const pushBBtn = document.getElementById("push-b-btn");
+    const solveBtn = document.getElementById("solve-btn");
 
     let wasmCalc = null;
     let entryBuffer = "";
@@ -307,11 +377,12 @@
     function call(methodName, ...args) {
       if (!wasmCalc || typeof wasmCalc[methodName] !== "function") {
         setError(`runtime method missing: ${methodName}`);
-        return;
+        return null;
       }
       const response = parseResponse(wasmCalc[methodName](...args));
       renderState(response.state);
       setError(response.ok ? "" : response.error?.message || "operation failed");
+      return response;
     }
 
     function syncEntry() {
@@ -320,19 +391,62 @@
 
     function commitEntryIfNeeded() {
       if (!entryBuffer.trim()) return true;
-      call("enter");
+      const response = call("enter");
       if (!lastState) return false;
-      if (errorDisplay.textContent) return false;
+      if (!response || !response.ok) return false;
       entryBuffer = "";
       return true;
     }
 
-    function handleAction(action) {
-      if (!wasmCalc) return;
-      if (action === "noop") {
-        setError("solve expects matrix A and B on the stack. UI flow is pending.");
+    function parseMatrixText(rawText) {
+      const rows = rawText
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (!rows.length) {
+        return { error: "matrix input is empty" };
+      }
+      const parsedRows = rows.map((row) =>
+        row
+          .split(/[,\s]+/)
+          .map((token) => token.trim())
+          .filter((token) => token.length > 0)
+      );
+      const cols = parsedRows[0].length;
+      if (!cols) {
+        return { error: "matrix row cannot be empty" };
+      }
+      for (const row of parsedRows) {
+        if (row.length !== cols) {
+          return { error: "all matrix rows must have the same number of columns" };
+        }
+      }
+      const data = [];
+      for (const row of parsedRows) {
+        for (const token of row) {
+          const value = Number(token);
+          if (!Number.isFinite(value)) {
+            return { error: `invalid numeric value: ${token}` };
+          }
+          data.push(value);
+        }
+      }
+      return {
+        matrix: { rows: parsedRows.length, cols, data }
+      };
+    }
+
+    function pushMatrixFromTextarea(textarea) {
+      const parsed = parseMatrixText(textarea.value);
+      if (parsed.error) {
+        setError(parsed.error);
         return;
       }
+      call("push_matrix_json", JSON.stringify(parsed.matrix));
+    }
+
+    function handleAction(action) {
+      if (!wasmCalc) return;
       if (action === "decimal") {
         if (!entryBuffer.includes(".")) entryBuffer = entryBuffer ? `${entryBuffer}.` : "0.";
         syncEntry();
@@ -373,6 +487,11 @@
         call("set_angle_mode_rad");
         return;
       }
+      if (action === "solve") {
+        if (!commitEntryIfNeeded()) return;
+        call("solve_ax_b");
+        return;
+      }
 
       const opMap = {
         add: "add",
@@ -402,6 +521,21 @@
         return;
       }
       handleAction(button.dataset.action);
+    });
+
+    pushABtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      pushMatrixFromTextarea(matrixAInput);
+    });
+
+    pushBBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      pushMatrixFromTextarea(matrixBInput);
+    });
+
+    solveBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      handleAction("solve");
     });
 
     window.addEventListener("keydown", (event) => {
@@ -443,10 +577,10 @@
         setError("");
       } catch (error) {
         runtimeHint.textContent =
-          "WASM runtime not found. Build the wasm package (e.g. wasm-pack build --target web --out-dir pkg).";
+          "WASM runtime not found. Build with ./scripts/build_wasm.sh (uses wasm-pack --target web --out-dir pkg).";
         setError("runtime unavailable");
         console.error(error);
-        for (const button of keypad.querySelectorAll("button")) {
+        for (const button of document.querySelectorAll("button")) {
           button.disabled = true;
         }
       }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{AngleMode, CalcError, Calculator, DisplayMode, Value};
+use crate::{AngleMode, CalcError, Calculator, DisplayMode, Matrix, Value};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -48,6 +48,13 @@ pub struct ApiResponse {
     pub error: Option<ApiError>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MatrixInput {
+    pub rows: usize,
+    pub cols: usize,
+    pub data: Vec<f64>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct CalculatorApi {
     calculator: Calculator,
@@ -88,6 +95,20 @@ impl CalculatorApi {
     pub fn push_real(&mut self, value: f64) -> ApiResponse {
         self.calculator.push_value(Value::Real(value));
         self.success()
+    }
+
+    pub fn push_matrix(&mut self, matrix: MatrixInput) -> ApiResponse {
+        match Matrix::new(matrix.rows, matrix.cols, matrix.data) {
+            Ok(value) => {
+                self.calculator.push_value(Value::Matrix(value));
+                self.success()
+            }
+            Err(error) => ApiResponse {
+                ok: false,
+                state: self.snapshot(),
+                error: Some(to_api_error(error)),
+            },
+        }
     }
 
     pub fn set_angle_mode(&mut self, mode: ApiAngleMode) -> ApiResponse {
@@ -253,7 +274,7 @@ fn to_api_error(error: CalcError) -> ApiError {
 mod wasm {
     use wasm_bindgen::prelude::wasm_bindgen;
 
-    use super::{ApiAngleMode, CalculatorApi};
+    use super::{ApiAngleMode, CalculatorApi, MatrixInput};
 
     #[wasm_bindgen]
     pub struct WasmCalculator {
@@ -334,6 +355,23 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn push_matrix_json(&mut self, matrix_json: &str) -> String {
+            let parsed: Result<MatrixInput, _> = serde_json::from_str(matrix_json);
+            match parsed {
+                Ok(matrix) => serde_json::to_string(&self.inner.push_matrix(matrix))
+                    .expect("response serialization should succeed"),
+                Err(error) => serde_json::to_string(&super::ApiResponse {
+                    ok: false,
+                    state: self.inner.snapshot(),
+                    error: Some(super::ApiError {
+                        code: "invalid_input".to_string(),
+                        message: format!("invalid matrix payload: {error}"),
+                    }),
+                })
+                .expect("response serialization should succeed"),
+            }
+        }
+
         pub fn determinant(&mut self) -> String {
             serde_json::to_string(&self.inner.determinant())
                 .expect("response serialization should succeed")
@@ -357,7 +395,7 @@ mod wasm {
 
 #[cfg(test)]
 mod tests {
-    use super::{ApiAngleMode, ApiValue, CalculatorApi};
+    use super::{ApiAngleMode, ApiValue, CalculatorApi, MatrixInput};
 
     #[test]
     fn successful_operation_returns_ok_with_updated_state() {
@@ -399,5 +437,27 @@ mod tests {
 
         assert_eq!(snapshot.entry_buffer, "90");
         assert_eq!(snapshot.angle_mode, ApiAngleMode::Deg);
+    }
+
+    #[test]
+    fn push_matrix_adds_matrix_to_stack() {
+        let mut api = CalculatorApi::new();
+        let matrix = MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![1.0, 2.0, 3.0, 4.0],
+        };
+
+        let response = api.push_matrix(matrix);
+
+        assert!(response.ok);
+        assert_eq!(
+            response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 2,
+                cols: 2,
+                data: vec![1.0, 2.0, 3.0, 4.0]
+            }]
+        );
     }
 }
