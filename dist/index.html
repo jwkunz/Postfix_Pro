@@ -6,18 +6,22 @@
   <title>Rust WASM RPN Calculator</title>
   <style>
     :root {
-      --bg: #f2efe6;
-      --panel: #fffdf7;
-      --ink: #1b1a17;
-      --muted: #6c6558;
-      --accent: #185a9d;
-      --accent-2: #43cea2;
-      --danger: #9d2424;
-      --key: #f4f1e8;
-      --key-op: #dce8f6;
-      --key-fn: #deefe7;
-      --key-danger: #f8dedb;
-      --border: #d8d2c4;
+      --bg-0: #0a0d14;
+      --bg-1: #121826;
+      --bg-2: #182133;
+      --panel: rgba(22, 29, 44, 0.92);
+      --panel-2: rgba(17, 22, 35, 0.92);
+      --ink: #e6edf8;
+      --muted: #8ea0bf;
+      --accent: #63b6ff;
+      --accent-2: #5ce3b6;
+      --danger: #ff7f88;
+      --key: #1b2438;
+      --key-op: #1d3553;
+      --key-fn: #1a3640;
+      --key-danger: #432734;
+      --border: #2b3a57;
+      --glow: rgba(99, 182, 255, 0.22);
     }
 
     * {
@@ -30,7 +34,9 @@
       font-family: "Trebuchet MS", "Gill Sans", "Avenir Next", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 20% 0%, #ffffff 0%, #efe9dd 40%, #e6dfd0 100%);
+        radial-gradient(circle at 12% 0%, #1b2a44 0%, transparent 40%),
+        radial-gradient(circle at 88% 100%, #173041 0%, transparent 45%),
+        linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%);
       display: grid;
       place-items: center;
       padding: 18px;
@@ -46,9 +52,10 @@
     .panel {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: 0 14px 36px rgba(27, 26, 23, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
       padding: 14px;
+      backdrop-filter: blur(2px);
     }
 
     .status-row {
@@ -64,18 +71,21 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px 12px;
-      background: #fff;
+      background: var(--panel-2);
       min-height: 80px;
       display: grid;
       gap: 8px;
       margin-bottom: 12px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     }
 
     .entry {
       font-size: 26px;
+      color: #f5fbff;
       line-height: 1.2;
       word-break: break-all;
       min-height: 32px;
+      text-shadow: 0 0 10px rgba(99, 182, 255, 0.25);
     }
 
     .error {
@@ -102,11 +112,12 @@
       font-size: 16px;
       min-height: 44px;
       cursor: pointer;
-      transition: transform 90ms ease, filter 120ms ease;
+      transition: transform 90ms ease, filter 120ms ease, box-shadow 120ms ease;
     }
 
     button:hover {
-      filter: brightness(0.98);
+      filter: brightness(1.08);
+      box-shadow: 0 0 0 1px var(--glow);
     }
 
     button:active {
@@ -154,7 +165,7 @@
       border-radius: 8px;
       padding: 8px 10px;
       font-family: "Courier New", monospace;
-      background: #fff;
+      background: var(--panel-2);
       font-size: 13px;
       overflow-wrap: anywhere;
     }
@@ -209,7 +220,8 @@
       font-family: "Courier New", monospace;
       font-size: 12px;
       padding: 8px;
-      background: #fff;
+      color: var(--ink);
+      background: var(--panel-2);
     }
 
     .matrix-actions {
@@ -238,7 +250,8 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px;
-      background: #fff;
+      color: var(--ink);
+      background: var(--panel-2);
       font-family: "Courier New", monospace;
       font-size: 13px;
     }
@@ -279,9 +292,50 @@
       gap: 8px;
     }
 
+    .keypad-guide {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    .status-chip {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 10px;
+      color: #cff2ff;
+      background: rgba(99, 182, 255, 0.15);
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+    }
+
     @media (max-width: 860px) {
       .app {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      .panel {
+        padding: 10px;
+      }
+
+      button {
+        min-height: 40px;
+        font-size: 14px;
+      }
+
+      .keys {
+        gap: 6px;
+      }
+
+      .memory-row {
+        grid-template-columns: 1fr 1fr;
       }
     }
   </style>
@@ -291,12 +345,13 @@
     <section class="panel">
       <div class="status-row">
         <strong>Rust WASM RPN</strong>
-        <span id="angle-indicator">RAD</span>
+        <span id="angle-indicator" class="status-chip">RAD</span>
       </div>
       <div class="display">
         <div id="entry-display" class="entry">0</div>
         <div id="error-display" class="error ok"></div>
       </div>
+      <p class="keypad-guide">RPN flow: build number -> <code>Enter</code> -> apply operation.</p>
 
       <div class="keys" id="keypad">
         <button class="fn" data-action="set-rad">RAD</button>
