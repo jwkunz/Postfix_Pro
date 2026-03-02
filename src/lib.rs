@@ -171,7 +171,11 @@ impl Calculator {
 
     pub fn add(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_add(a, b)?)),
             (Value::Real(a), Value::Real(b)) => Ok(Value::Real(a + b)),
+            (Value::Matrix(_), _) | (_, Value::Matrix(_)) => Err(CalcError::TypeMismatch(
+                "+ only supports matrix+matrix or scalar/complex arithmetic".to_string(),
+            )),
             _ => {
                 let left = Self::as_complex(left, "+")?;
                 let right = Self::as_complex(right, "+")?;
@@ -185,7 +189,11 @@ impl Calculator {
 
     pub fn sub(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_sub(a, b)?)),
             (Value::Real(a), Value::Real(b)) => Ok(Value::Real(a - b)),
+            (Value::Matrix(_), _) | (_, Value::Matrix(_)) => Err(CalcError::TypeMismatch(
+                "- only supports matrix-matrix or scalar/complex arithmetic".to_string(),
+            )),
             _ => {
                 let left = Self::as_complex(left, "-")?;
                 let right = Self::as_complex(right, "-")?;
@@ -199,7 +207,14 @@ impl Calculator {
 
     pub fn mul(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_mul(a, b)?)),
+            (Value::Matrix(a), Value::Real(b)) => Ok(Value::Matrix(Self::matrix_scalar_mul(a, *b))),
+            (Value::Real(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_scalar_mul(b, *a))),
             (Value::Real(a), Value::Real(b)) => Ok(Value::Real(a * b)),
+            (Value::Matrix(_), _) | (_, Value::Matrix(_)) => Err(CalcError::TypeMismatch(
+                "* only supports matrix*matrix, matrix*real, or scalar/complex arithmetic"
+                    .to_string(),
+            )),
             _ => {
                 let left = Self::as_complex(left, "*")?;
                 let right = Self::as_complex(right, "*")?;
@@ -329,6 +344,25 @@ impl Calculator {
         })
     }
 
+    pub fn transpose(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_transpose(matrix))),
+            _ => Err(CalcError::TypeMismatch(
+                "transpose requires a matrix value".to_string(),
+            )),
+        })
+    }
+
+    pub fn push_identity(&mut self, size: usize) -> Result<(), CalcError> {
+        if size == 0 {
+            return Err(CalcError::InvalidInput(
+                "identity matrix size must be non-zero".to_string(),
+            ));
+        }
+        self.state.stack.push(Value::Matrix(Self::matrix_identity(size)));
+        Ok(())
+    }
+
     fn require_stack_len(&self, needed: usize) -> Result<(), CalcError> {
         let available = self.state.stack.len();
         if available < needed {
@@ -412,11 +446,103 @@ impl Calculator {
             im: -value.re.sin() * value.im.sinh(),
         }
     }
+
+    fn matrix_add(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+        Self::require_same_shape(a, b, "matrix add")?;
+        let data = a
+            .data
+            .iter()
+            .zip(&b.data)
+            .map(|(lhs, rhs)| lhs + rhs)
+            .collect::<Vec<_>>();
+        Matrix::new(a.rows, a.cols, data)
+    }
+
+    fn matrix_sub(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+        Self::require_same_shape(a, b, "matrix sub")?;
+        let data = a
+            .data
+            .iter()
+            .zip(&b.data)
+            .map(|(lhs, rhs)| lhs - rhs)
+            .collect::<Vec<_>>();
+        Matrix::new(a.rows, a.cols, data)
+    }
+
+    fn matrix_mul(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+        if a.cols != b.rows {
+            return Err(CalcError::DimensionMismatch {
+                expected: a.cols,
+                actual: b.rows,
+            });
+        }
+
+        let mut out = vec![0.0; a.rows * b.cols];
+        for row in 0..a.rows {
+            for col in 0..b.cols {
+                let mut acc = 0.0;
+                for k in 0..a.cols {
+                    acc += a.data[row * a.cols + k] * b.data[k * b.cols + col];
+                }
+                out[row * b.cols + col] = acc;
+            }
+        }
+        Matrix::new(a.rows, b.cols, out)
+    }
+
+    fn matrix_scalar_mul(matrix: &Matrix, scalar: f64) -> Matrix {
+        let data = matrix.data.iter().map(|value| value * scalar).collect();
+        Matrix {
+            rows: matrix.rows,
+            cols: matrix.cols,
+            data,
+        }
+    }
+
+    fn matrix_transpose(matrix: &Matrix) -> Matrix {
+        let mut out = vec![0.0; matrix.data.len()];
+        for row in 0..matrix.rows {
+            for col in 0..matrix.cols {
+                out[col * matrix.rows + row] = matrix.data[row * matrix.cols + col];
+            }
+        }
+        Matrix {
+            rows: matrix.cols,
+            cols: matrix.rows,
+            data: out,
+        }
+    }
+
+    fn matrix_identity(size: usize) -> Matrix {
+        let mut data = vec![0.0; size * size];
+        for i in 0..size {
+            data[i * size + i] = 1.0;
+        }
+        Matrix {
+            rows: size,
+            cols: size,
+            data,
+        }
+    }
+
+    fn require_same_shape(a: &Matrix, b: &Matrix, operation: &str) -> Result<(), CalcError> {
+        if a.rows != b.rows || a.cols != b.cols {
+            return Err(CalcError::TypeMismatch(format!(
+                "{operation} requires equal matrix dimensions: left is {}x{}, right is {}x{}",
+                a.rows, a.cols, b.rows, b.cols
+            )));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{AngleMode, CalcError, Calculator, Complex, Value};
+    use super::{AngleMode, CalcError, Calculator, Complex, Matrix, Value};
+
+    fn matrix(rows: usize, cols: usize, data: &[f64]) -> Matrix {
+        Matrix::new(rows, cols, data.to_vec()).expect("valid matrix")
+    }
 
     #[test]
     fn enter_pushes_real_and_clears_entry() {
@@ -601,6 +727,116 @@ mod tests {
             result,
             Err(CalcError::DomainError(
                 "ln is undefined for non-positive real values".to_string()
+            ))
+        );
+        assert_eq!(calc.state().stack, before);
+    }
+
+    #[test]
+    fn add_two_matrices() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+        calc.push_value(Value::Matrix(matrix(2, 2, &[5.0, 6.0, 7.0, 8.0])));
+
+        let result = calc.add();
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(2, 2, &[6.0, 8.0, 10.0, 12.0]))]
+        );
+    }
+
+    #[test]
+    fn matrix_add_shape_mismatch_preserves_stack() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+        calc.push_value(Value::Matrix(matrix(1, 3, &[5.0, 6.0, 7.0])));
+        let before = calc.state().stack.clone();
+
+        let result = calc.add();
+
+        assert!(
+            matches!(result, Err(CalcError::TypeMismatch(message)) if message.contains("equal matrix dimensions"))
+        );
+        assert_eq!(calc.state().stack, before);
+    }
+
+    #[test]
+    fn mul_two_matrices() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0])));
+        calc.push_value(Value::Matrix(matrix(3, 2, &[7.0, 8.0, 9.0, 10.0, 11.0, 12.0])));
+
+        let result = calc.mul();
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(2, 2, &[58.0, 64.0, 139.0, 154.0]))]
+        );
+    }
+
+    #[test]
+    fn matrix_times_scalar() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, -2.0, 3.0, -4.0])));
+        calc.push_value(Value::Real(2.5));
+
+        let result = calc.mul();
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(2, 2, &[2.5, -5.0, 7.5, -10.0]))]
+        );
+    }
+
+    #[test]
+    fn transpose_matrix() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0])));
+
+        let result = calc.transpose();
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(3, 2, &[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]))]
+        );
+    }
+
+    #[test]
+    fn push_identity_matrix() {
+        let mut calc = Calculator::new();
+
+        let result = calc.push_identity(3);
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(
+                3,
+                3,
+                &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+            ))]
+        );
+    }
+
+    #[test]
+    fn matrix_and_complex_multiplication_errors_without_mutation() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(1, 1, &[3.0])));
+        calc.push_value(Value::Complex(Complex { re: 2.0, im: 1.0 }));
+        let before = calc.state().stack.clone();
+
+        let result = calc.mul();
+
+        assert_eq!(
+            result,
+            Err(CalcError::TypeMismatch(
+                "* only supports matrix*matrix, matrix*real, or scalar/complex arithmetic"
+                    .to_string()
             ))
         );
         assert_eq!(calc.state().stack, before);
