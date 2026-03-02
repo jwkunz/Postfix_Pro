@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rust WASM RPN Calculator</title>
+  <style>
+    :root {
+      --bg: #f2efe6;
+      --panel: #fffdf7;
+      --ink: #1b1a17;
+      --muted: #6c6558;
+      --accent: #185a9d;
+      --accent-2: #43cea2;
+      --danger: #9d2424;
+      --key: #f4f1e8;
+      --key-op: #dce8f6;
+      --key-fn: #deefe7;
+      --key-danger: #f8dedb;
+      --border: #d8d2c4;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Gill Sans", "Avenir Next", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 0%, #ffffff 0%, #efe9dd 40%, #e6dfd0 100%);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .app {
+      width: min(960px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 14px 36px rgba(27, 26, 23, 0.12);
+      padding: 14px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .display {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      min-height: 80px;
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .entry {
+      font-size: 26px;
+      line-height: 1.2;
+      word-break: break-all;
+      min-height: 32px;
+    }
+
+    .error {
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--danger);
+    }
+
+    .error.ok {
+      color: transparent;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--key);
+      color: var(--ink);
+      font-size: 16px;
+      min-height: 44px;
+      cursor: pointer;
+      transition: transform 90ms ease, filter 120ms ease;
+    }
+
+    button:hover {
+      filter: brightness(0.98);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.op {
+      background: var(--key-op);
+    }
+
+    button.fn {
+      background: var(--key-fn);
+    }
+
+    button.danger {
+      background: var(--key-danger);
+    }
+
+    button.wide {
+      grid-column: span 2;
+    }
+
+    .stack-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .stack {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .stack li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: "Courier New", monospace;
+      background: #fff;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .stack .idx {
+      color: var(--muted);
+      min-width: 28px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <div class="status-row">
+        <strong>Rust WASM RPN</strong>
+        <span id="angle-indicator">RAD</span>
+      </div>
+      <div class="display">
+        <div id="entry-display" class="entry">0</div>
+        <div id="error-display" class="error ok"></div>
+      </div>
+
+      <div class="keys" id="keypad">
+        <button class="fn" data-action="set-rad">RAD</button>
+        <button class="fn" data-action="set-deg">DEG</button>
+        <button class="fn" data-action="sin">sin</button>
+        <button class="fn" data-action="ln">ln</button>
+        <button class="fn" data-action="sqrt">sqrt</button>
+
+        <button class="danger" data-action="clear-entry">CE</button>
+        <button class="danger" data-action="clear-all">C</button>
+        <button class="op" data-action="mul">*</button>
+        <button class="op" data-action="div">/</button>
+        <button class="fn" data-action="backspace">back</button>
+
+        <button data-digit="7">7</button>
+        <button data-digit="8">8</button>
+        <button data-digit="9">9</button>
+        <button class="op" data-action="add">+</button>
+        <button class="op" data-action="sub">-</button>
+
+        <button data-digit="4">4</button>
+        <button data-digit="5">5</button>
+        <button data-digit="6">6</button>
+        <button class="fn" data-action="det">det</button>
+        <button class="fn" data-action="transpose">T</button>
+
+        <button data-digit="1">1</button>
+        <button data-digit="2">2</button>
+        <button data-digit="3">3</button>
+        <button class="fn" data-action="inverse">inv</button>
+        <button class="fn" data-action="toggle-sign">+/-</button>
+
+        <button data-digit="0">0</button>
+        <button data-action="decimal">.</button>
+        <button class="op wide" data-action="enter">Enter</button>
+        <button class="fn" data-action="noop">solve</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="stack-title">Stack (Top First)</h2>
+      <ol id="stack-list" class="stack"></ol>
+      <p class="hint" id="runtime-hint">
+        Loading WASM runtime...
+      </p>
+    </section>
+  </main>
+
+  <script type="module">
+    const entryDisplay = document.getElementById("entry-display");
+    const errorDisplay = document.getElementById("error-display");
+    const angleIndicator = document.getElementById("angle-indicator");
+    const stackList = document.getElementById("stack-list");
+    const runtimeHint = document.getElementById("runtime-hint");
+    const keypad = document.getElementById("keypad");
+
+    let wasmCalc = null;
+    let entryBuffer = "";
+    let lastState = null;
+
+    function setError(message) {
+      if (!message) {
+        errorDisplay.textContent = "";
+        errorDisplay.classList.add("ok");
+        return;
+      }
+      errorDisplay.textContent = message;
+      errorDisplay.classList.remove("ok");
+    }
+
+    function formatApiValue(value) {
+      if (!value || !value.type) return "?";
+      if (value.type === "real") return Number(value.value).toString();
+      if (value.type === "complex") {
+        const re = Number(value.re).toString();
+        const im = Number(value.im).toString();
+        return `${re} + ${im}i`;
+      }
+      if (value.type === "matrix") {
+        return `${value.rows}x${value.cols} [${value.data.join(", ")}]`;
+      }
+      return JSON.stringify(value);
+    }
+
+    function renderState(state) {
+      lastState = state;
+      entryDisplay.textContent = state.entry_buffer || "0";
+      angleIndicator.textContent = String(state.angle_mode || "rad").toUpperCase();
+      stackList.innerHTML = "";
+      const topFirst = [...(state.stack || [])].reverse();
+      topFirst.forEach((value, idx) => {
+        const li = document.createElement("li");
+        const stackIndex = document.createElement("span");
+        stackIndex.className = "idx";
+        stackIndex.textContent = `#${idx}`;
+        const val = document.createElement("span");
+        val.textContent = formatApiValue(value);
+        li.append(stackIndex, val);
+        stackList.append(li);
+      });
+      if (!topFirst.length) {
+        const li = document.createElement("li");
+        li.textContent = "(empty)";
+        stackList.append(li);
+      }
+    }
+
+    function parseResponse(jsonText) {
+      try {
+        return JSON.parse(jsonText);
+      } catch (_) {
+        return { ok: false, state: lastState || { stack: [], entry_buffer: "" }, error: { message: "invalid JSON from runtime" } };
+      }
+    }
+
+    function call(methodName, ...args) {
+      if (!wasmCalc || typeof wasmCalc[methodName] !== "function") {
+        setError(`runtime method missing: ${methodName}`);
+        return;
+      }
+      const response = parseResponse(wasmCalc[methodName](...args));
+      renderState(response.state);
+      setError(response.ok ? "" : response.error?.message || "operation failed");
+    }
+
+    function syncEntry() {
+      call("entry_set", entryBuffer);
+    }
+
+    function commitEntryIfNeeded() {
+      if (!entryBuffer.trim()) return true;
+      call("enter");
+      if (!lastState) return false;
+      if (errorDisplay.textContent) return false;
+      entryBuffer = "";
+      return true;
+    }
+
+    function handleAction(action) {
+      if (!wasmCalc) return;
+      if (action === "noop") {
+        setError("solve expects matrix A and B on the stack. UI flow is pending.");
+        return;
+      }
+      if (action === "decimal") {
+        if (!entryBuffer.includes(".")) entryBuffer = entryBuffer ? `${entryBuffer}.` : "0.";
+        syncEntry();
+        return;
+      }
+      if (action === "backspace") {
+        entryBuffer = entryBuffer.slice(0, -1);
+        syncEntry();
+        return;
+      }
+      if (action === "toggle-sign") {
+        if (entryBuffer.startsWith("-")) entryBuffer = entryBuffer.slice(1);
+        else entryBuffer = entryBuffer ? `-${entryBuffer}` : "-";
+        syncEntry();
+        return;
+      }
+      if (action === "enter") {
+        call("enter");
+        entryBuffer = "";
+        return;
+      }
+      if (action === "clear-entry") {
+        entryBuffer = "";
+        call("clear_entry");
+        return;
+      }
+      if (action === "clear-all") {
+        entryBuffer = "";
+        call("clear_all");
+        return;
+      }
+
+      if (action === "set-deg") {
+        call("set_angle_mode_deg");
+        return;
+      }
+      if (action === "set-rad") {
+        call("set_angle_mode_rad");
+        return;
+      }
+
+      const opMap = {
+        add: "add",
+        sub: "sub",
+        mul: "mul",
+        div: "div",
+        sqrt: "sqrt",
+        ln: "ln",
+        sin: "sin",
+        det: "determinant",
+        inverse: "inverse",
+        transpose: "transpose"
+      };
+      const method = opMap[action];
+      if (!method) return;
+      if (!commitEntryIfNeeded()) return;
+      call(method);
+    }
+
+    keypad.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const digit = button.dataset.digit;
+      if (digit !== undefined) {
+        entryBuffer += digit;
+        syncEntry();
+        return;
+      }
+      handleAction(button.dataset.action);
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (!wasmCalc) return;
+      if (event.key >= "0" && event.key <= "9") {
+        entryBuffer += event.key;
+        syncEntry();
+        return;
+      }
+      if (event.key === ".") {
+        handleAction("decimal");
+        return;
+      }
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        handleAction("backspace");
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleAction("enter");
+        return;
+      }
+      const keyOps = { "+": "add", "-": "sub", "*": "mul", "/": "div" };
+      if (keyOps[event.key]) {
+        event.preventDefault();
+        handleAction(keyOps[event.key]);
+      }
+    });
+
+    async function boot() {
+      try {
+        const wasmModule = await import("./pkg/webcalculator_backend.js");
+        await wasmModule.default();
+        wasmCalc = new wasmModule.WasmCalculator();
+        runtimeHint.textContent = "WASM runtime loaded.";
+        const initial = JSON.parse(wasmCalc.snapshot_json());
+        renderState(initial);
+        setError("");
+      } catch (error) {
+        runtimeHint.textContent =
+          "WASM runtime not found. Build the wasm package (e.g. wasm-pack build --target web --out-dir pkg).";
+        setError("runtime unavailable");
+        console.error(error);
+        for (const button of keypad.querySelectorAll("button")) {
+          button.disabled = true;
+        }
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
