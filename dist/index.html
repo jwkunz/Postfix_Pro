@@ -293,6 +293,14 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+    .panel-title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
     .stack-panel {
       grid-column: 1 / -1;
     }
@@ -543,54 +551,85 @@
     </section>
 
     <section class="panel">
-      <section class="complex-tools">
-        <h3>Scientific Functions</h3>
-        <div class="science-actions" id="advanced-actions">
-          <button class="fn" data-action="hyp-toggle" id="hyp-toggle-btn">hyp</button>
-          <button class="fn" data-action="to-rad">to_rad</button>
-          <button class="fn" data-action="to-deg">to_deg</button>
-          <button class="fn" data-action="atan2">atan2</button>
+      <h3 class="panel-title">Scalar</h3>
+      <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="inv">inv x</button>
+        <button class="fn" data-action="square">x^2</button>
+        <button class="fn" data-action="sqrt">sqrt</button>
+        <button class="fn" data-action="pow">x^y</button>
+        <button class="fn" data-action="root">x√y</button>
+        <button class="fn" data-action="exp10">10^x</button>
+        <button class="fn" data-action="exp">e^x</button>
+        <button class="fn" data-action="ln">ln x</button>
+        <button class="fn" data-action="exp2">2^x</button>
+        <button class="fn" data-action="log2">log2 x</button>
+        <button class="fn" data-action="log10">log10</button>
+        <button class="fn" data-action="signum">signum</button>
+        <button class="fn" data-action="percent">%</button>
+      </div>
+    </section>
 
-          <button class="fn" data-action="sin" data-hyp="sinh">sin</button>
-          <button class="fn" data-action="asin" data-hyp="asinh">asin</button>
-          <button class="fn" data-action="cos" data-hyp="cosh">cos</button>
-          <button class="fn" data-action="acos" data-hyp="acosh">acos</button>
-          <button class="fn" data-action="tan" data-hyp="tanh">tan</button>
-          <button class="fn" data-action="atan" data-hyp="atanh">atan</button>
-          <button class="fn" data-action="inv">inv x</button>
-          <button class="fn" data-action="square">x^2</button>
-          <button class="fn" data-action="sqrt">sqrt</button>
-          <button class="fn" data-action="pow">x^y</button>
-          <button class="fn" data-action="root">x√y</button>
-          <button class="fn" data-action="exp10">10^x</button>
-          <button class="fn" data-action="log10">log10</button>
-          <button class="fn" data-action="exp">e^x</button>
-          <button class="fn" data-action="ln">ln x</button>
-          <button class="fn" data-action="exp2">2^x</button>
-          <button class="fn" data-action="log2">log2 x</button>
-          <button class="fn" data-action="gamma">gamma</button>
-          <button class="fn" data-action="signum">signum</button>
-          <button class="fn" data-action="abs">abs</button>
-          <button class="fn" data-action="abs-sq">abs^2</button>
-          <button class="fn" data-action="arg">arg</button>
-          <button class="fn" data-action="conjugate">conj</button>
-          <button class="fn" data-action="factorial">n!</button>
-          <button class="fn" data-action="ncr">nCr</button>
-          <button class="fn" data-action="npr">nPr</button>
-          <button class="fn" data-action="modulo">x mod y</button>
-          <button class="fn" data-action="rand">ran#</button>
-          <button class="fn" data-action="gcd">GCD</button>
-          <button class="fn" data-action="lcm">LCM</button>
-          <button class="fn" data-action="round">rnd</button>
-          <button class="fn" data-action="floor">floor</button>
-          <button class="fn" data-action="ceil">ceil</button>
-          <button class="fn" data-action="dec-part">decP</button>
-          <button class="fn" data-action="percent">%</button>
-          <button class="fn" data-action="erf">erf</button>
-          <button class="fn" data-action="pi">pi</button>
-          <button class="fn" data-action="e">e</button>
-        </div>
-      </section>
+    <section class="panel">
+      <h3 class="panel-title">Trigonometry</h3>
+      <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="hyp-toggle" id="hyp-toggle-btn">hyp</button>
+        <button class="fn" data-action="to-rad">to_rad</button>
+        <button class="fn" data-action="to-deg">to_deg</button>
+        <button class="fn" data-action="atan2">atan2</button>
+        <button class="fn" data-action="sin" data-hyp="sinh">sin</button>
+        <button class="fn" data-action="asin" data-hyp="asinh">asin</button>
+        <button class="fn" data-action="cos" data-hyp="cosh">cos</button>
+        <button class="fn" data-action="acos" data-hyp="acosh">acos</button>
+        <button class="fn" data-action="tan" data-hyp="tanh">tan</button>
+        <button class="fn" data-action="atan" data-hyp="atanh">atan</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Complex</h3>
+      <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="abs">abs</button>
+        <button class="fn" data-action="abs-sq">abs^2</button>
+        <button class="fn" data-action="arg">arg</button>
+        <button class="fn" data-action="conjugate">conj</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Number Theory</h3>
+      <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="factorial">n!</button>
+        <button class="fn" data-action="ncr">nCr</button>
+        <button class="fn" data-action="npr">nPr</button>
+        <button class="fn" data-action="modulo">x mod y</button>
+        <button class="fn" data-action="gcd">GCD</button>
+        <button class="fn" data-action="lcm">LCM</button>
+        <button class="fn" data-action="gamma">gamma</button>
+        <button class="fn" data-action="erf">erf</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Rounding</h3>
+      <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="round">rnd</button>
+        <button class="fn" data-action="floor">floor</button>
+        <button class="fn" data-action="ceil">ceil</button>
+        <button class="fn" data-action="dec-part">decP</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Constants</h3>
+      <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="pi">pi</button>
+        <button class="fn" data-action="e">e</button>
+        <button class="fn" data-action="rand">ran#</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Other</h3>
       <section class="complex-tools">
         <h3>Complex Entry</h3>
         <div class="complex-row">
@@ -642,7 +681,7 @@
     const complexReInput = document.getElementById("complex-re-input");
     const complexImInput = document.getElementById("complex-im-input");
     const pushComplexBtn = document.getElementById("push-complex-btn");
-    const advancedActions = document.getElementById("advanced-actions");
+    const advancedActionPanels = document.querySelectorAll("[data-advanced-actions]");
     const hypToggleBtn = document.getElementById("hyp-toggle-btn");
     const memoryRegisterInput = document.getElementById("memory-register-input");
     const memoryStoreBtn = document.getElementById("memory-store-btn");
@@ -852,7 +891,7 @@
     }
 
     function applyHypModeUI() {
-      const toggles = advancedActions.querySelectorAll("button[data-hyp]");
+      const toggles = document.querySelectorAll("button[data-hyp]");
       toggles.forEach((button) => {
         const baseAction = button.dataset.action;
         const baseLabel = button.dataset.baseLabel || button.textContent;
@@ -1033,10 +1072,12 @@
       handleAction(button.dataset.action);
     });
 
-    advancedActions.addEventListener("click", (event) => {
-      const button = event.target.closest("button");
-      if (!button) return;
-      handleAction(button.dataset.action);
+    advancedActionPanels.forEach((panel) => {
+      panel.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        handleAction(button.dataset.action);
+      });
     });
 
     matrixOpActions.addEventListener("click", (event) => {
