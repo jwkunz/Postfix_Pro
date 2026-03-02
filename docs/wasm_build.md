@@ -7,8 +7,24 @@ Use the repository script:
 ```
 
 This command:
-- runs `wasm-pack build --target web --out-dir pkg`
+- runs `wasm-pack build --target no-modules --out-dir pkg`
+- copies wasm bindings to `dist/pkg/`
 - refreshes `dist/index.html`
+- generates `dist/wasm_base64.js` (embedded wasm bytes for local-file startup)
+- writes `dist/README.txt`
+
+## Distribution Flow
+
+1. Run `./scripts/build_wasm.sh`
+2. Zip the `dist/` folder
+3. Share the zip
+4. Recipient unzips and opens `dist/index.html`
+
+Expected `dist/` contents:
+- `index.html`
+- `pkg/` (generated glue + wasm artifacts)
+- `wasm_base64.js`
+- `README.txt`
 
 If `wasm-pack` is missing, install instructions:
 - https://rustwasm.github.io/wasm-pack/installer/

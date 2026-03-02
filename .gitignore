@@ -1,1 +1,4 @@
 /target
+/dist/pkg/
+/dist/wasm_base64.js
+/dist/README.txt
