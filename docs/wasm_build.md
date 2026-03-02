@@ -10,6 +10,7 @@ This command:
 - runs `wasm-pack build --target no-modules --out-dir pkg`
 - copies wasm bindings to `dist/pkg/`
 - refreshes `dist/index.html`
+- copies `help.md` to `dist/help.md`
 - generates `dist/wasm_base64.js` (embedded wasm bytes for local-file startup)
 - writes `dist/README.txt`
 
@@ -24,6 +25,7 @@ Expected `dist/` contents:
 - `index.html`
 - `pkg/` (generated glue + wasm artifacts)
 - `wasm_base64.js`
+- `help.md`
 - `README.txt`
 
 If `wasm-pack` is missing, install instructions:

@@ -15,6 +15,7 @@ wasm-pack build --target no-modules --out-dir pkg
 mkdir -p dist/pkg
 cp -r pkg/. dist/pkg/
 cp index.html dist/index.html
+cp help.md dist/help.md
 
 WASM_PATH="dist/pkg/webcalculator_backend_bg.wasm"
 BASE64_PATH="dist/wasm_base64.js"
@@ -40,5 +41,6 @@ EOF
 echo "WASM build complete:"
 echo "  - pkg/ bindings generated (no-modules target)"
 echo "  - dist/index.html refreshed"
+echo "  - dist/help.md copied"
 echo "  - dist/pkg/ copied"
 echo "  - dist/wasm_base64.js generated"

@@ -343,6 +343,66 @@
       letter-spacing: 0.06em;
     }
 
+    .status-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .help-btn {
+      min-height: auto;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+    }
+
+    .help-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 10, 18, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 100;
+    }
+
+    .help-modal.open {
+      display: flex;
+    }
+
+    .help-dialog {
+      width: min(980px, 100%);
+      height: min(82vh, 760px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+    }
+
+    .help-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .help-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #0b1020;
+    }
+
     @media (max-width: 600px) {
       body {
         padding: 10px;
@@ -404,7 +464,10 @@
     <section class="panel">
       <div class="status-row">
         <strong>Rust WASM RPN</strong>
-        <span id="angle-indicator" class="status-chip">RAD</span>
+        <div class="status-actions">
+          <button class="fn help-btn" id="help-open-btn" type="button">Help</button>
+          <span id="angle-indicator" class="status-chip">RAD</span>
+        </div>
       </div>
       <div class="display">
         <div id="entry-display" class="entry">0</div>
@@ -547,6 +610,15 @@
       </section>
     </section>
   </main>
+  <div class="help-modal" id="help-modal" aria-hidden="true">
+    <div class="help-dialog" role="dialog" aria-modal="true" aria-label="Calculator help">
+      <div class="help-header">
+        <span>Calculator Help</span>
+        <button class="danger help-btn" id="help-close-btn" type="button">Close</button>
+      </div>
+      <iframe class="help-frame" id="help-frame" title="Calculator Help" loading="lazy"></iframe>
+    </div>
+  </div>
 
   <script src="./pkg/webcalculator_backend.js"></script>
   <script src="./wasm_base64.js"></script>
@@ -576,12 +648,17 @@
     const memoryStoreBtn = document.getElementById("memory-store-btn");
     const memoryRecallBtn = document.getElementById("memory-recall-btn");
     const memoryClearBtn = document.getElementById("memory-clear-btn");
+    const helpOpenBtn = document.getElementById("help-open-btn");
+    const helpCloseBtn = document.getElementById("help-close-btn");
+    const helpModal = document.getElementById("help-modal");
+    const helpFrame = document.getElementById("help-frame");
 
     let wasmCalc = null;
     let entryBuffer = "";
     let lastState = null;
     let pendingCommand = null;
     let hypMode = false;
+    let helpLoaded = false;
 
     function setError(message) {
       if (!message) {
@@ -797,6 +874,20 @@
       hypToggleBtn.classList.toggle("active", hypMode);
     }
 
+    function openHelp() {
+      if (!helpLoaded) {
+        helpFrame.src = "./help.md";
+        helpLoaded = true;
+      }
+      helpModal.classList.add("open");
+      helpModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeHelp() {
+      helpModal.classList.remove("open");
+      helpModal.setAttribute("aria-hidden", "true");
+    }
+
     function handleAction(action) {
       if (!wasmCalc) return;
       if (action === "decimal") {
@@ -1006,7 +1097,26 @@
       call("memory_clear", index);
     });
 
+    helpOpenBtn.addEventListener("click", () => {
+      openHelp();
+    });
+
+    helpCloseBtn.addEventListener("click", () => {
+      closeHelp();
+    });
+
+    helpModal.addEventListener("click", (event) => {
+      if (event.target === helpModal) {
+        closeHelp();
+      }
+    });
+
     window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && helpModal.classList.contains("open")) {
+        event.preventDefault();
+        closeHelp();
+        return;
+      }
       if (!wasmCalc) return;
       if (pendingCommand) {
         if (event.key >= "0" && event.key <= "9") {
@@ -1103,7 +1213,7 @@
           "WASM runtime not found. Build with ./scripts/build_wasm.sh and open dist/index.html.";
         setError("runtime unavailable");
         console.error(error);
-        for (const button of document.querySelectorAll("button")) {
+        for (const button of document.querySelectorAll("button:not(#help-open-btn):not(#help-close-btn)")) {
           button.disabled = true;
         }
       }
