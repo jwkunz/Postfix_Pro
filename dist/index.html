@@ -938,12 +938,14 @@
       if (!rows.length) {
         return { error: "matrix input is empty" };
       }
-      const parsedRows = rows.map((row) =>
-        row
-          .split(/[,\s]+/)
-          .map((token) => token.trim())
-          .filter((token) => token.length > 0)
-      );
+      const parsedRows = [];
+      for (const row of rows) {
+        const tokenized = tokenizeMatrixRow(row);
+        if (tokenized.error) {
+          return { error: tokenized.error };
+        }
+        parsedRows.push(tokenized.tokens);
+      }
       const cols = parsedRows[0].length;
       if (!cols) {
         return { error: "matrix row cannot be empty" };
@@ -956,16 +958,76 @@
       const data = [];
       for (const row of parsedRows) {
         for (const token of row) {
-          const value = Number(token);
-          if (!Number.isFinite(value)) {
-            return { error: `invalid numeric value: ${token}` };
+          const parsed = parseMatrixToken(token);
+          if (parsed.error) {
+            return { error: parsed.error };
           }
-          data.push({ re: value, im: 0 });
+          data.push(parsed.value);
         }
       }
       return {
         matrix: { rows: parsedRows.length, cols, data }
       };
+    }
+
+    function tokenizeMatrixRow(rowText) {
+      const tokens = [];
+      let current = "";
+      let depth = 0;
+      for (const ch of rowText) {
+        if (ch === "(") {
+          depth += 1;
+          current += ch;
+          continue;
+        }
+        if (ch === ")") {
+          depth -= 1;
+          if (depth < 0) {
+            return { error: "matrix row has unmatched ')' in complex literal" };
+          }
+          current += ch;
+          continue;
+        }
+        const isDelimiter = (ch === "," || /\s/.test(ch)) && depth === 0;
+        if (isDelimiter) {
+          const token = current.trim();
+          if (token) tokens.push(token);
+          current = "";
+          continue;
+        }
+        current += ch;
+      }
+      if (depth !== 0) {
+        return { error: "matrix row has unmatched '(' in complex literal" };
+      }
+      const trailing = current.trim();
+      if (trailing) tokens.push(trailing);
+      return { tokens };
+    }
+
+    function parseMatrixToken(rawToken) {
+      const token = String(rawToken || "").trim();
+      if (!token) {
+        return { error: "matrix token is empty" };
+      }
+      if (token.startsWith("(") && token.endsWith(")")) {
+        const inner = token.slice(1, -1);
+        const parts = inner.split(",");
+        if (parts.length !== 2) {
+          return { error: `invalid complex matrix token ${token}; expected (re,im)` };
+        }
+        const re = Number(parts[0].trim());
+        const im = Number(parts[1].trim());
+        if (!Number.isFinite(re) || !Number.isFinite(im)) {
+          return { error: `invalid complex matrix token ${token}; expected finite re/im` };
+        }
+        return { value: { re, im } };
+      }
+      const re = Number(token);
+      if (!Number.isFinite(re)) {
+        return { error: `invalid numeric value: ${token}` };
+      }
+      return { value: { re, im: 0 } };
     }
 
     function pushMatrixFromTextarea(textarea) {
