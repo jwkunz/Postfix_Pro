@@ -1,5 +1,7 @@
 # Post_Fix_Pro
 
+![Post_Fix_Pro Logo](Post_Fix_Pro.png)
+
 A browser-based Reverse Polish Notation (RPN) calculator with:
 
 - Rust backend calculator engine

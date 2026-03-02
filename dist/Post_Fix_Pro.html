@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Post_Fix_Pro</title>
+  <title>Post Fix Pro</title>
   <style>
     :root {
       --bg-0: #0a0d14;
@@ -71,6 +71,28 @@
       font-size: 14px;
       color: var(--muted);
       margin-bottom: 8px;
+    }
+
+    .brand-hero {
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .brand-logo {
+      width: min(380px, 88%);
+      max-height: 120px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
+    }
+
+    .brand-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
     .display {
@@ -549,8 +571,12 @@
     </section>
 
     <section class="panel">
+      <div class="brand-hero">
+        <img class="brand-logo" src="./Post_Fix_Pro.png" alt="Post Fix Pro logo">
+        <p class="brand-subtitle">RPN Calculator</p>
+      </div>
       <div class="status-row">
-        <strong>Post_Fix_Pro</strong>
+        <strong>Post Fix Pro</strong>
         <div class="status-actions">
           <button class="fn help-btn" id="help-open-btn" type="button">Help</button>
           <span id="angle-indicator" class="status-chip">RAD</span>
