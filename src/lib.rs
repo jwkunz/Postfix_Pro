@@ -184,6 +184,31 @@ impl Calculator {
         Ok(())
     }
 
+    pub fn roll(&mut self, count: usize) -> Result<(), CalcError> {
+        if count < 2 {
+            return Err(CalcError::InvalidInput(
+                "roll count must be at least 2".to_string(),
+            ));
+        }
+        self.require_stack_len(count)?;
+        let len = self.state.stack.len();
+        self.state.stack[len - count..].rotate_left(1);
+        Ok(())
+    }
+
+    pub fn pick(&mut self, depth: usize) -> Result<(), CalcError> {
+        if depth == 0 {
+            return Err(CalcError::InvalidInput(
+                "pick depth must be at least 1".to_string(),
+            ));
+        }
+        self.require_stack_len(depth)?;
+        let len = self.state.stack.len();
+        let value = self.state.stack[len - depth].clone();
+        self.state.stack.push(value);
+        Ok(())
+    }
+
     pub fn add(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_add(a, b)?)),
@@ -1579,5 +1604,48 @@ mod tests {
         assert_eq!(calc.memory_store(26), Err(CalcError::InvalidRegister(26)));
         assert_eq!(calc.memory_recall(99), Err(CalcError::InvalidRegister(99)));
         assert_eq!(calc.memory_clear(999), Err(CalcError::InvalidRegister(999)));
+    }
+
+    #[test]
+    fn roll_rotates_top_n_values() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Real(1.0));
+        calc.push_value(Value::Real(2.0));
+        calc.push_value(Value::Real(3.0));
+        calc.push_value(Value::Real(4.0));
+
+        let result = calc.roll(4);
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![
+                Value::Real(2.0),
+                Value::Real(3.0),
+                Value::Real(4.0),
+                Value::Real(1.0)
+            ]
+        );
+    }
+
+    #[test]
+    fn pick_duplicates_nth_from_top() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Real(10.0));
+        calc.push_value(Value::Real(20.0));
+        calc.push_value(Value::Real(30.0));
+
+        let result = calc.pick(2);
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![
+                Value::Real(10.0),
+                Value::Real(20.0),
+                Value::Real(30.0),
+                Value::Real(20.0)
+            ]
+        );
     }
 }

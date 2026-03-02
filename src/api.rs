@@ -159,6 +159,16 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn roll(&mut self, count: usize) -> ApiResponse {
+        let result = self.calculator.roll(count);
+        self.wrap(result)
+    }
+
+    pub fn pick(&mut self, depth: usize) -> ApiResponse {
+        let result = self.calculator.pick(depth);
+        self.wrap(result)
+    }
+
     pub fn pow(&mut self) -> ApiResponse {
         let result = self.calculator.pow();
         self.wrap(result)
@@ -488,6 +498,16 @@ mod wasm {
             serde_json::to_string(&self.inner.rot()).expect("response serialization should succeed")
         }
 
+        pub fn roll(&mut self, count: usize) -> String {
+            serde_json::to_string(&self.inner.roll(count))
+                .expect("response serialization should succeed")
+        }
+
+        pub fn pick(&mut self, depth: usize) -> String {
+            serde_json::to_string(&self.inner.pick(depth))
+                .expect("response serialization should succeed")
+        }
+
         pub fn sub(&mut self) -> String {
             serde_json::to_string(&self.inner.sub()).expect("response serialization should succeed")
         }
@@ -803,6 +823,40 @@ mod tests {
                 ApiValue::Real { value: 1.0 },
                 ApiValue::Real { value: 3.0 },
                 ApiValue::Real { value: 2.0 }
+            ]
+        );
+    }
+
+    #[test]
+    fn roll_and_pick_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_real(1.0);
+        api.push_real(2.0);
+        api.push_real(3.0);
+        api.push_real(4.0);
+
+        let roll_response = api.roll(4);
+        assert!(roll_response.ok);
+        assert_eq!(
+            roll_response.state.stack,
+            vec![
+                ApiValue::Real { value: 2.0 },
+                ApiValue::Real { value: 3.0 },
+                ApiValue::Real { value: 4.0 },
+                ApiValue::Real { value: 1.0 }
+            ]
+        );
+
+        let pick_response = api.pick(2);
+        assert!(pick_response.ok);
+        assert_eq!(
+            pick_response.state.stack,
+            vec![
+                ApiValue::Real { value: 2.0 },
+                ApiValue::Real { value: 3.0 },
+                ApiValue::Real { value: 4.0 },
+                ApiValue::Real { value: 1.0 },
+                ApiValue::Real { value: 4.0 }
             ]
         );
     }

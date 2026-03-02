@@ -535,6 +535,7 @@
     let wasmCalc = null;
     let entryBuffer = "";
     let lastState = null;
+    let pendingCommand = null;
 
     function setError(message) {
       if (!message) {
@@ -700,6 +701,31 @@
         return null;
       }
       return raw.charCodeAt(0) - 65;
+    }
+
+    function clearPendingCommand() {
+      pendingCommand = null;
+    }
+
+    function beginPendingCommand(type) {
+      pendingCommand = { type, digits: "" };
+      setError("");
+    }
+
+    function executePendingCommand() {
+      if (!pendingCommand) return;
+      const amount = Number(pendingCommand.digits);
+      if (!Number.isInteger(amount) || amount <= 0) {
+        setError("hotkey expects a positive integer argument");
+        clearPendingCommand();
+        return;
+      }
+      if (!commitEntryIfNeeded()) {
+        clearPendingCommand();
+        return;
+      }
+      call(pendingCommand.type, amount);
+      clearPendingCommand();
     }
 
     function handleAction(action) {
@@ -877,9 +903,55 @@
 
     window.addEventListener("keydown", (event) => {
       if (!wasmCalc) return;
+      if (pendingCommand) {
+        if (event.key >= "0" && event.key <= "9") {
+          event.preventDefault();
+          pendingCommand.digits += event.key;
+          return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          executePendingCommand();
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          clearPendingCommand();
+          return;
+        }
+        clearPendingCommand();
+      }
       if (event.key >= "0" && event.key <= "9") {
         entryBuffer += event.key;
         syncEntry();
+        return;
+      }
+      if (event.key === "Delete") {
+        event.preventDefault();
+        if (!commitEntryIfNeeded()) return;
+        call("drop");
+        return;
+      }
+      if (event.key === "d" || event.key === "D") {
+        event.preventDefault();
+        if (!commitEntryIfNeeded()) return;
+        call("dup");
+        return;
+      }
+      if (event.key === "s" || event.key === "S") {
+        event.preventDefault();
+        if (!commitEntryIfNeeded()) return;
+        call("swap");
+        return;
+      }
+      if (event.key === "r" || event.key === "R") {
+        event.preventDefault();
+        beginPendingCommand("roll");
+        return;
+      }
+      if (event.key === "p" || event.key === "P") {
+        event.preventDefault();
+        beginPendingCommand("pick");
         return;
       }
       if (event.key === ".") {
