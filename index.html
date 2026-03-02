@@ -1019,6 +1019,16 @@
       return raw.charCodeAt(0) - 65;
     }
 
+    function isTextEditingTarget(target) {
+      if (!(target instanceof Element)) return false;
+      if (target instanceof HTMLTextAreaElement) return !target.readOnly && !target.disabled;
+      if (target instanceof HTMLInputElement) {
+        const textualTypes = new Set(["text", "search", "url", "tel", "email", "password", "number"]);
+        return textualTypes.has(target.type) && !target.readOnly && !target.disabled;
+      }
+      return target instanceof HTMLSelectElement || target.isContentEditable;
+    }
+
     function clearPendingCommand() {
       pendingCommand = null;
     }
@@ -1331,6 +1341,9 @@
       if (event.key === "Escape" && helpModal.classList.contains("open")) {
         event.preventDefault();
         closeHelp();
+        return;
+      }
+      if (isTextEditingTarget(event.target)) {
         return;
       }
       if (!wasmCalc) return;
