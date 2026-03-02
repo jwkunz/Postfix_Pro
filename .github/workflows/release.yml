@@ -1,0 +1,44 @@
+name: Build And Release Dist
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag commit is on master
+        run: |
+          git fetch origin master --depth=1
+          git merge-base --is-ancestor "${GITHUB_SHA}" "origin/master"
+
+      - name: Install wasm-pack
+        run: |
+          curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
+
+      - name: Build dist
+        run: ./scripts/build_wasm.sh
+
+      - name: Package dist
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          ZIP_NAME="dist-${TAG}.zip"
+          (cd dist && zip -r "../${ZIP_NAME}" .)
+          echo "ZIP_NAME=${ZIP_NAME}" >> "${GITHUB_ENV}"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_NAME }}
+          generate_release_notes: true
