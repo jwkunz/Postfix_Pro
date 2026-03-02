@@ -907,8 +907,12 @@
         return;
       }
       if (action === "enter") {
-        call("enter");
-        entryBuffer = "";
+        if (entryBuffer.trim()) {
+          call("enter");
+          entryBuffer = "";
+        } else {
+          call("dup");
+        }
         return;
       }
       if (action === "clear-entry") {
