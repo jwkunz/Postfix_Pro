@@ -310,8 +310,17 @@ impl Calculator {
             (Value::Matrix(a), Value::Matrix(b)) => {
                 Ok(Value::Matrix(Self::matrix_hadamard_mul(a, b)?))
             }
+            (Value::Matrix(a), scalar) => {
+                let scalar = Self::as_complex(scalar, "HadMul")?;
+                Ok(Value::Matrix(Self::matrix_scalar_mul(a, scalar)))
+            }
+            (scalar, Value::Matrix(b)) => {
+                let scalar = Self::as_complex(scalar, "HadMul")?;
+                Ok(Value::Matrix(Self::matrix_scalar_mul(b, scalar)))
+            }
             _ => Err(CalcError::TypeMismatch(
-                "HadMul requires two matrix operands of equal shape".to_string(),
+                "HadMul requires a matrix with either another equal-shape matrix or a scalar"
+                    .to_string(),
             )),
         })
     }
@@ -321,8 +330,17 @@ impl Calculator {
             (Value::Matrix(a), Value::Matrix(b)) => {
                 Ok(Value::Matrix(Self::matrix_hadamard_div(a, b)?))
             }
+            (Value::Matrix(a), scalar) => {
+                let scalar = Self::as_complex(scalar, "HadDiv")?;
+                Ok(Value::Matrix(Self::matrix_scalar_div(a, scalar)?))
+            }
+            (scalar, Value::Matrix(b)) => {
+                let scalar = Self::as_complex(scalar, "HadDiv")?;
+                Ok(Value::Matrix(Self::matrix_scalar_ldiv(scalar, b)?))
+            }
             _ => Err(CalcError::TypeMismatch(
-                "HadDiv requires two matrix operands of equal shape".to_string(),
+                "HadDiv requires a matrix with either another equal-shape matrix or a scalar"
+                    .to_string(),
             )),
         })
     }
@@ -2658,6 +2676,26 @@ mod tests {
         assert_eq!(
             calc.state().stack,
             vec![Value::Matrix(matrix(1, 3, &[4.0, 2.0, 6.0]))]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[1.0, -2.0, 3.0])));
+        calc.push_value(Value::Real(2.0));
+
+        assert_eq!(calc.hadamard_mul(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(1, 3, &[2.0, -4.0, 6.0]))]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[2.0, 4.0, 8.0])));
+        calc.push_value(Value::Real(2.0));
+
+        assert_eq!(calc.hadamard_div(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(1, 3, &[1.0, 2.0, 4.0]))]
         );
     }
 

@@ -41,8 +41,8 @@ Stack labels:
 - `inverse`: inverse of top matrix
 - `dot`: vector dot product (supports `Nx1` and `1xN`)
 - `cross`: vector cross product (3-element vectors)
-- `HadMul`: element-wise matrix multiplication (same-shape matrices)
-- `HadDiv`: element-wise matrix division (same-shape matrices)
+- `HadMul`: element-wise multiplication (matrix with same-shape matrix, or matrix with scalar)
+- `HadDiv`: element-wise division (matrix by same-shape matrix, matrix/scalar, or scalar/matrix)
 - `norm_p`: p-norm (push matrix/vector, then push `p`, then press `norm_p`)
 - `diag`: convert vector matrix (`Nx1` or `1xN`) into a diagonal matrix
 - `MatExp`: matrix exponential of top square matrix (`e^A`)

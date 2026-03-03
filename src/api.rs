@@ -1245,6 +1245,44 @@ mod tests {
         let div_response = api.hadamard_div();
         assert!(div_response.ok);
         assert_eq!(div_response.state.stack.len(), 1);
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(2.0, 0.0), c(4.0, 0.0), c(8.0, 0.0)],
+        });
+        api.push_real(2.0);
+
+        let scalar_mul_response = api.hadamard_mul();
+        assert!(scalar_mul_response.ok);
+        assert_eq!(
+            scalar_mul_response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 1,
+                cols: 3,
+                data: vec![c(4.0, 0.0), c(8.0, 0.0), c(16.0, 0.0)]
+            }]
+        );
+
+        api.clear_all();
+        api.push_real(8.0);
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(2.0, 0.0), c(4.0, 0.0), c(8.0, 0.0)],
+        });
+
+        let scalar_div_response = api.hadamard_div();
+        assert!(scalar_div_response.ok);
+        assert_eq!(
+            scalar_div_response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 1,
+                cols: 3,
+                data: vec![c(4.0, 0.0), c(2.0, 0.0), c(1.0, 0.0)]
+            }]
+        );
     }
 
     #[test]
