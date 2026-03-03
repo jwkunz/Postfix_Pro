@@ -61,6 +61,7 @@ Stack labels:
 - `Size A` controls:
   - set rows + columns
   - press `Apply` to regenerate matrix text with that size
+- `Apply`: regenerate matrix text from current row/column controls
 - `Solve A*x=B`: solve linear system using top two matrices
 - `LSTSQ Solve`: least-squares solve using Moore-Penrose pseudoinverse (`x = A^+ * B`, equivalent to normal-equation solution with pseudoinverse handling)
   - returns a status message with residual norm
@@ -111,25 +112,28 @@ Example:
 
 - If top-of-stack is a matrix, trig/angle operators apply element-wise.
 - `sin`, `asin`, `cos`, `acos`, `tan`, `atan`
+- `sec`, `asec`, `csc`, `acsc`, `cot`, `acot`
 - `atan2`: binary operation using stack order `(y, x)`
 - `to rad`: convert top real value degrees -> radians
 - `to deg`: convert top real value radians -> degrees
 - `hyp`: toggles trig buttons to hyperbolic/inverse-hyperbolic variants:
   - `sinh`, `asinh`, `cosh`, `acosh`, `tanh`, `atanh`
+  - `sech`, `asech`, `csch`, `acsch`, `coth`, `acoth`
 
 ### Powers / Logs / Core
 
 - If top-of-stack is a matrix, scalar core operators apply element-wise.
+- `neg`: unary negation
 - `inv x`: reciprocal (`1/x`)
 - `x^2`: square
 - `sqrt`: square root
 - `x^y`: power (`x` then `y`)
 - `x√y`: y-th root of x (`x` then `y`)
 - `10^x`, `e^x`, `2^x`
-- `log10`, `ln x`, `log2 x`
+- `log10`, `ln x`, `log2 x`, `log_y_x` (binary, computes `log base y of x`)
 - `gamma`, `signum`
 - `%`: percentage (`base * percent / 100`)
-- `erf`
+- `erf`, `erfc`, `bessel`, `mbessel`, `sinc`
 - `pi`, `e`: push constants
 
 ### Complex
@@ -151,7 +155,7 @@ Example:
   - if top is complex: decomposes to `magnitude`, `cycles` where `arg = 2π*cycles`
   - else if top two are real scalars: composes from `magnitude`, `cycles`
 
-### Integer / Number Tools
+### Special
 
 - Rounding operators (`round`, `floor`, `ceil`, `dec part`) apply element-wise to matrices.
 - `n!`: factorial (non-negative integer)
@@ -171,8 +175,11 @@ Example:
 - `ran#`: pseudo-random number in `[0, 1)`
 - `mean`: arithmetic mean of a real vector (`Nx1` or `1xN`)
 - `mode`: most frequent value in a real vector
-- `std dev`: population standard deviation of a real vector
+- `std dev p`: population standard deviation of a real vector
+- `std dev s`: sample standard deviation of a real vector
 - `variance`: population variance of a real vector
+- `median`: median of a real vector
+- `quart`: quartile summary as row vector `[min, q1, q2, q3, max]`
 - `max`: maximum value of a real vector
 - `min`: minimum value of a real vector
 
@@ -180,7 +187,7 @@ Example:
 
 - `pi`: π
 - `e`: Euler's number
-- `gamma`: Euler-Mascheroni constant `0.5772156649015329`
+- `γ`: Euler-Mascheroni constant `0.5772156649015329`
 - `ψ`: golden ratio `1.618033988749895`
 - `c`: speed of light `299792458`
 - `mol`: Avogadro constant `6.02214076E23`
@@ -189,6 +196,7 @@ Example:
 - `epsilon_0`: vacuum permittivity `8.8541878128E-12`
 - `mu_0`: vacuum permeability `1.25663706212E-6`
 - `G`: Newtonian gravitational constant `6.67430E-11`
+- `q_e`: electron charge `-1.602176634E-19`
 
 ## Memory (A-Z)
 

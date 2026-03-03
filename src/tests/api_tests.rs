@@ -823,7 +823,7 @@
             data: vec![c(3.0, 0.0), c(4.0, 0.0)],
         });
 
-        let std_response = api.std_dev();
+        let std_response = api.std_dev_p();
         assert!(std_response.ok);
         assert_eq!(
             std_response.state.stack,
@@ -972,4 +972,133 @@
                 ApiValue::Real { value: 3.0 }
             ]
         );
+    }
+
+    #[test]
+    fn scalar_extensions_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_real(2.0);
+        api.push_real(8.0);
+        let log_response = api.log_y_x();
+        assert!(log_response.ok);
+        assert_eq!(
+            log_response.state.stack,
+            vec![ApiValue::Real { value: 3.0 }]
+        );
+
+        let neg_response = api.neg();
+        assert!(neg_response.ok);
+        assert_eq!(
+            neg_response.state.stack,
+            vec![ApiValue::Real { value: -3.0 }]
+        );
+
+        api.clear_all();
+        api.push_real(0.0);
+        let sinc_response = api.sinc();
+        assert!(sinc_response.ok);
+        assert_eq!(
+            sinc_response.state.stack,
+            vec![ApiValue::Real { value: 1.0 }]
+        );
+
+        api.clear_all();
+        api.push_real(0.0);
+        let erfc_response = api.erfc();
+        assert!(erfc_response.ok);
+        match erfc_response.state.stack.as_slice() {
+            [ApiValue::Real { value }] => {
+                assert!((*value - 1.0).abs() < 1e-8);
+            }
+            other => panic!("expected real erfc result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn reciprocal_trig_works_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_real(0.0);
+        let sec_response = api.sec();
+        assert!(sec_response.ok);
+        assert_eq!(
+            sec_response.state.stack,
+            vec![ApiValue::Real { value: 1.0 }]
+        );
+
+        api.clear_all();
+        api.push_real(1.0);
+        let acot_response = api.acot();
+        assert!(acot_response.ok);
+        match acot_response.state.stack.as_slice() {
+            [ApiValue::Real { value }] => {
+                assert!((*value - std::f64::consts::FRAC_PI_4).abs() < 1e-10);
+            }
+            other => panic!("expected real acot result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn statistics_extensions_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 4,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)],
+        });
+        let median_response = api.median();
+        assert!(median_response.ok);
+        assert_eq!(
+            median_response.state.stack,
+            vec![ApiValue::Real { value: 2.5 }]
+        );
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 4,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)],
+        });
+        let quart_response = api.quart();
+        assert!(quart_response.ok);
+        match quart_response.state.stack.as_slice() {
+            [ApiValue::Matrix { rows, cols, data }] => {
+                assert_eq!((*rows, *cols), (1, 5));
+                assert!((data[0].re - 1.0).abs() < 1e-10);
+                assert!((data[1].re - 1.75).abs() < 1e-10);
+                assert!((data[2].re - 2.5).abs() < 1e-10);
+                assert!((data[3].re - 3.25).abs() < 1e-10);
+                assert!((data[4].re - 4.0).abs() < 1e-10);
+            }
+            other => panic!("expected quartile matrix, got {other:?}"),
+        }
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 4,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)],
+        });
+        let std_p_response = api.std_dev_p();
+        assert!(std_p_response.ok);
+        match std_p_response.state.stack.as_slice() {
+            [ApiValue::Real { value }] => {
+                assert!((*value - 1.118033988749895).abs() < 1e-10);
+            }
+            other => panic!("expected population std-dev scalar, got {other:?}"),
+        }
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 4,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)],
+        });
+        let std_s_response = api.std_dev_s();
+        assert!(std_s_response.ok);
+        match std_s_response.state.stack.as_slice() {
+            [ApiValue::Real { value }] => {
+                assert!((*value - 1.2909944487358056).abs() < 1e-10);
+            }
+            other => panic!("expected sample std-dev scalar, got {other:?}"),
+        }
     }

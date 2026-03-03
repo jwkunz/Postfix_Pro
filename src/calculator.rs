@@ -617,6 +617,48 @@ impl Calculator {
         sign * (1.0 - poly * (-x * x).exp())
     }
 
+    fn real_erfc(x: f64) -> f64 {
+        1.0 - Self::real_erf(x)
+    }
+
+    fn real_bessel_j0(x: f64) -> f64 {
+        let mut sum = 1.0;
+        let mut term = 1.0;
+        let half_sq = 0.25 * x * x;
+        for k in 1..=40 {
+            let kf = k as f64;
+            term *= -half_sq / (kf * kf);
+            sum += term;
+            if term.abs() < 1e-15 {
+                break;
+            }
+        }
+        sum
+    }
+
+    fn real_modified_bessel_i0(x: f64) -> f64 {
+        let mut sum = 1.0;
+        let mut term = 1.0;
+        let half_sq = 0.25 * x * x;
+        for k in 1..=40 {
+            let kf = k as f64;
+            term *= half_sq / (kf * kf);
+            sum += term;
+            if term.abs() < 1e-15 {
+                break;
+            }
+        }
+        sum
+    }
+
+    fn real_sinc(x: f64) -> f64 {
+        if x.abs() < 1e-12 {
+            1.0
+        } else {
+            x.sin() / x
+        }
+    }
+
     fn real_gamma(z: f64) -> f64 {
         // Lanczos approximation with reflection formula.
         if z < 0.5 {
@@ -1253,7 +1295,7 @@ impl Calculator {
         Ok(mode)
     }
 
-    fn matrix_variance(matrix: &Matrix) -> Result<f64, CalcError> {
+    fn matrix_variance_population(matrix: &Matrix) -> Result<f64, CalcError> {
         let values = Self::matrix_real_vector(matrix)?;
         let mean = values.iter().sum::<f64>() / values.len() as f64;
         let var = values
@@ -1267,8 +1309,78 @@ impl Calculator {
         Ok(var)
     }
 
-    fn matrix_std_dev(matrix: &Matrix) -> Result<f64, CalcError> {
-        Ok(Self::matrix_variance(matrix)?.sqrt())
+    fn matrix_variance_sample(matrix: &Matrix) -> Result<f64, CalcError> {
+        let values = Self::matrix_real_vector(matrix)?;
+        if values.len() < 2 {
+            return Err(CalcError::InvalidInput(
+                "sample variance requires at least two values".to_string(),
+            ));
+        }
+        let mean = values.iter().sum::<f64>() / values.len() as f64;
+        let var = values
+            .iter()
+            .map(|value| {
+                let d = *value - mean;
+                d * d
+            })
+            .sum::<f64>()
+            / (values.len() as f64 - 1.0);
+        Ok(var)
+    }
+
+    fn matrix_std_dev_population(matrix: &Matrix) -> Result<f64, CalcError> {
+        Ok(Self::matrix_variance_population(matrix)?.sqrt())
+    }
+
+    fn matrix_std_dev_sample(matrix: &Matrix) -> Result<f64, CalcError> {
+        Ok(Self::matrix_variance_sample(matrix)?.sqrt())
+    }
+
+    fn matrix_median(matrix: &Matrix) -> Result<f64, CalcError> {
+        let mut values = Self::matrix_real_vector(matrix)?;
+        values.sort_by(|a, b| a.total_cmp(b));
+        let n = values.len();
+        if n % 2 == 1 {
+            Ok(values[n / 2])
+        } else {
+            Ok((values[n / 2 - 1] + values[n / 2]) / 2.0)
+        }
+    }
+
+    fn quantile_sorted(values: &[f64], q: f64) -> f64 {
+        if values.len() == 1 {
+            return values[0];
+        }
+        let pos = q.clamp(0.0, 1.0) * (values.len() as f64 - 1.0);
+        let lo = pos.floor() as usize;
+        let hi = pos.ceil() as usize;
+        if lo == hi {
+            values[lo]
+        } else {
+            let t = pos - lo as f64;
+            values[lo] * (1.0 - t) + values[hi] * t
+        }
+    }
+
+    fn matrix_quartiles_summary(matrix: &Matrix) -> Result<Matrix, CalcError> {
+        let mut values = Self::matrix_real_vector(matrix)?;
+        values.sort_by(|a, b| a.total_cmp(b));
+        let min = *values.first().expect("prechecked non-empty");
+        let max = *values.last().expect("prechecked non-empty");
+        let q1 = Self::quantile_sorted(&values, 0.25);
+        let q2 = Self::quantile_sorted(&values, 0.5);
+        let q3 = Self::quantile_sorted(&values, 0.75);
+        Matrix::new(
+            1,
+            5,
+            vec![
+                Complex { re: min, im: 0.0 },
+                Complex { re: q1, im: 0.0 },
+                Complex { re: q2, im: 0.0 },
+                Complex { re: q3, im: 0.0 },
+                Complex { re: max, im: 0.0 },
+            ],
+        )
     }
 
     fn matrix_max(matrix: &Matrix) -> Result<f64, CalcError> {

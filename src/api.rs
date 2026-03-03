@@ -374,6 +374,27 @@ impl CalculatorApi {
         self.wrap_with_undo(before, result)
     }
 
+    /// Executes the `sec` operation.
+    pub fn sec(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.sec();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `csc` operation.
+    pub fn csc(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.csc();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `cot` operation.
+    pub fn cot(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.cot();
+        self.wrap_with_undo(before, result)
+    }
+
     /// Executes the `asin` operation.
     pub fn asin(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
@@ -388,10 +409,31 @@ impl CalculatorApi {
         self.wrap_with_undo(before, result)
     }
 
+    /// Executes the `asec` operation.
+    pub fn asec(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.asec();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `acsc` operation.
+    pub fn acsc(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.acsc();
+        self.wrap_with_undo(before, result)
+    }
+
     /// Executes the `atan` operation.
     pub fn atan(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
         let result = self.calculator.atan();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `acot` operation.
+    pub fn acot(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.acot();
         self.wrap_with_undo(before, result)
     }
 
@@ -416,6 +458,27 @@ impl CalculatorApi {
         self.wrap_with_undo(before, result)
     }
 
+    /// Executes the `sech` operation.
+    pub fn sech(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.sech();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `csch` operation.
+    pub fn csch(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.csch();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `coth` operation.
+    pub fn coth(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.coth();
+        self.wrap_with_undo(before, result)
+    }
+
     /// Executes the `asinh` operation.
     pub fn asinh(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
@@ -430,10 +493,31 @@ impl CalculatorApi {
         self.wrap_with_undo(before, result)
     }
 
+    /// Executes the `asech` operation.
+    pub fn asech(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.asech();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `acsch` operation.
+    pub fn acsch(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.acsch();
+        self.wrap_with_undo(before, result)
+    }
+
     /// Executes the `atanh` operation.
     pub fn atanh(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
         let result = self.calculator.atanh();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `acoth` operation.
+    pub fn acoth(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.acoth();
         self.wrap_with_undo(before, result)
     }
 
@@ -472,6 +556,13 @@ impl CalculatorApi {
         self.wrap_with_undo(before, result)
     }
 
+    /// Executes the `log_y_x` operation.
+    pub fn log_y_x(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.log_y_x();
+        self.wrap_with_undo(before, result)
+    }
+
     /// Executes the `gamma` operation.
     pub fn gamma(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
@@ -483,6 +574,41 @@ impl CalculatorApi {
     pub fn erf(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
         let result = self.calculator.erf();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `erfc` operation.
+    pub fn erfc(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.erfc();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `bessel` operation.
+    pub fn bessel(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.bessel();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `mbessel` operation.
+    pub fn mbessel(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.mbessel();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `sinc` operation.
+    pub fn sinc(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.sinc();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `neg` operation.
+    pub fn neg(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.neg();
         self.wrap_with_undo(before, result)
     }
 
@@ -829,10 +955,31 @@ impl CalculatorApi {
         self.wrap_with_undo(before, result)
     }
 
-    /// Executes the `std_dev` operation.
-    pub fn std_dev(&mut self) -> ApiResponse {
+    /// Executes the `std_dev_p` operation.
+    pub fn std_dev_p(&mut self) -> ApiResponse {
         let before = self.calculator.state().clone();
-        let result = self.calculator.std_dev();
+        let result = self.calculator.std_dev_p();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `std_dev_s` operation.
+    pub fn std_dev_s(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.std_dev_s();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `median` operation.
+    pub fn median(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.median();
+        self.wrap_with_undo(before, result)
+    }
+
+    /// Executes the `quart` operation.
+    pub fn quart(&mut self) -> ApiResponse {
+        let before = self.calculator.state().clone();
+        let result = self.calculator.quart();
         self.wrap_with_undo(before, result)
     }
 
@@ -1239,6 +1386,21 @@ mod wasm {
             serde_json::to_string(&self.inner.tan()).expect("response serialization should succeed")
         }
 
+        /// Executes the `sec` operation.
+        pub fn sec(&mut self) -> String {
+            serde_json::to_string(&self.inner.sec()).expect("response serialization should succeed")
+        }
+
+        /// Executes the `csc` operation.
+        pub fn csc(&mut self) -> String {
+            serde_json::to_string(&self.inner.csc()).expect("response serialization should succeed")
+        }
+
+        /// Executes the `cot` operation.
+        pub fn cot(&mut self) -> String {
+            serde_json::to_string(&self.inner.cot()).expect("response serialization should succeed")
+        }
+
         /// Executes the `asin` operation.
         pub fn asin(&mut self) -> String {
             serde_json::to_string(&self.inner.asin())
@@ -1251,9 +1413,27 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `asec` operation.
+        pub fn asec(&mut self) -> String {
+            serde_json::to_string(&self.inner.asec())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `acsc` operation.
+        pub fn acsc(&mut self) -> String {
+            serde_json::to_string(&self.inner.acsc())
+                .expect("response serialization should succeed")
+        }
+
         /// Executes the `atan` operation.
         pub fn atan(&mut self) -> String {
             serde_json::to_string(&self.inner.atan())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `acot` operation.
+        pub fn acot(&mut self) -> String {
+            serde_json::to_string(&self.inner.acot())
                 .expect("response serialization should succeed")
         }
 
@@ -1275,6 +1455,24 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `sech` operation.
+        pub fn sech(&mut self) -> String {
+            serde_json::to_string(&self.inner.sech())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `csch` operation.
+        pub fn csch(&mut self) -> String {
+            serde_json::to_string(&self.inner.csch())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `coth` operation.
+        pub fn coth(&mut self) -> String {
+            serde_json::to_string(&self.inner.coth())
+                .expect("response serialization should succeed")
+        }
+
         /// Executes the `asinh` operation.
         pub fn asinh(&mut self) -> String {
             serde_json::to_string(&self.inner.asinh())
@@ -1287,9 +1485,27 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `asech` operation.
+        pub fn asech(&mut self) -> String {
+            serde_json::to_string(&self.inner.asech())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `acsch` operation.
+        pub fn acsch(&mut self) -> String {
+            serde_json::to_string(&self.inner.acsch())
+                .expect("response serialization should succeed")
+        }
+
         /// Executes the `atanh` operation.
         pub fn atanh(&mut self) -> String {
             serde_json::to_string(&self.inner.atanh())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `acoth` operation.
+        pub fn acoth(&mut self) -> String {
+            serde_json::to_string(&self.inner.acoth())
                 .expect("response serialization should succeed")
         }
 
@@ -1322,6 +1538,12 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `log_y_x` operation.
+        pub fn log_y_x(&mut self) -> String {
+            serde_json::to_string(&self.inner.log_y_x())
+                .expect("response serialization should succeed")
+        }
+
         /// Executes the `gamma` operation.
         pub fn gamma(&mut self) -> String {
             serde_json::to_string(&self.inner.gamma())
@@ -1331,6 +1553,36 @@ mod wasm {
         /// Executes the `erf` operation.
         pub fn erf(&mut self) -> String {
             serde_json::to_string(&self.inner.erf()).expect("response serialization should succeed")
+        }
+
+        /// Executes the `erfc` operation.
+        pub fn erfc(&mut self) -> String {
+            serde_json::to_string(&self.inner.erfc())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `bessel` operation.
+        pub fn bessel(&mut self) -> String {
+            serde_json::to_string(&self.inner.bessel())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `mbessel` operation.
+        pub fn mbessel(&mut self) -> String {
+            serde_json::to_string(&self.inner.mbessel())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `sinc` operation.
+        pub fn sinc(&mut self) -> String {
+            serde_json::to_string(&self.inner.sinc())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `neg` operation.
+        pub fn neg(&mut self) -> String {
+            serde_json::to_string(&self.inner.neg())
+                .expect("response serialization should succeed")
         }
 
         /// Executes the `signum` operation.
@@ -1658,9 +1910,27 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
-        /// Executes the `std_dev` operation.
-        pub fn std_dev(&mut self) -> String {
-            serde_json::to_string(&self.inner.std_dev())
+        /// Executes the `std_dev_p` operation.
+        pub fn std_dev_p(&mut self) -> String {
+            serde_json::to_string(&self.inner.std_dev_p())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `std_dev_s` operation.
+        pub fn std_dev_s(&mut self) -> String {
+            serde_json::to_string(&self.inner.std_dev_s())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `median` operation.
+        pub fn median(&mut self) -> String {
+            serde_json::to_string(&self.inner.median())
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `quart` operation.
+        pub fn quart(&mut self) -> String {
+            serde_json::to_string(&self.inner.quart())
                 .expect("response serialization should succeed")
         }
 

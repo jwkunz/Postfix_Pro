@@ -767,6 +767,7 @@
     <section class="panel">
       <h3 class="panel-title">Scalar</h3>
       <div class="science-actions" data-advanced-actions>
+        <button class="fn" data-action="neg">neg</button>
         <button class="fn" data-action="inv">inv</button>
         <button class="fn" data-action="square">square</button>
         <button class="fn" data-action="sqrt">sqrt</button>
@@ -778,6 +779,7 @@
         <button class="fn" data-action="ln">ln</button>
         <button class="fn" data-action="exp2">exp2</button>
         <button class="fn" data-action="log2">log2</button>
+        <button class="fn" data-action="log-y-x">log_y_x</button>
         <button class="fn" data-action="signum">signum</button>
         <button class="fn" data-action="percent">percent</button>
       </div>
@@ -796,6 +798,12 @@
         <button class="fn" data-action="acos" data-hyp="acosh">acos</button>
         <button class="fn" data-action="tan" data-hyp="tanh">tan</button>
         <button class="fn" data-action="atan" data-hyp="atanh">atan</button>
+        <button class="fn" data-action="sec" data-hyp="sech">sec</button>
+        <button class="fn" data-action="asec" data-hyp="asech">asec</button>
+        <button class="fn" data-action="csc" data-hyp="csch">csc</button>
+        <button class="fn" data-action="acsc" data-hyp="acsch">acsc</button>
+        <button class="fn" data-action="cot" data-hyp="coth">cot</button>
+        <button class="fn" data-action="acot" data-hyp="acoth">acot</button>
       </div>
     </section>
 
@@ -815,7 +823,7 @@
     </section>
 
     <section class="panel">
-      <h3 class="panel-title">Number Theory</h3>
+      <h3 class="panel-title">Special</h3>
       <div class="science-actions" data-advanced-actions>
         <button class="fn" data-action="factorial">factorial</button>
         <button class="fn" data-action="ncr">ncr</button>
@@ -825,6 +833,10 @@
         <button class="fn" data-action="lcm">lcm</button>
         <button class="fn" data-action="gamma">gamma</button>
         <button class="fn" data-action="erf">erf</button>
+        <button class="fn" data-action="erfc">erfc</button>
+        <button class="fn" data-action="bessel">bessel</button>
+        <button class="fn" data-action="mbessel">mbessel</button>
+        <button class="fn" data-action="sinc">sinc</button>
       </div>
     </section>
 
@@ -833,7 +845,10 @@
       <div class="science-actions" data-advanced-actions>
         <button class="fn" data-action="mean">mean</button>
         <button class="fn" data-action="mode">mode</button>
-        <button class="fn" data-action="std-dev">std_dev</button>
+        <button class="fn" data-action="median">median</button>
+        <button class="fn" data-action="quart">quart</button>
+        <button class="fn" data-action="std-dev-p">std_dev_p</button>
+        <button class="fn" data-action="std-dev-s">std_dev_s</button>
         <button class="fn" data-action="variance">variance</button>
         <button class="fn" data-action="max">max</button>
         <button class="fn" data-action="min">min</button>
@@ -865,6 +880,7 @@
         <button class="fn" data-action="const-epsilon0">ε₀</button>
         <button class="fn" data-action="const-mu0">μ₀</button>
         <button class="fn" data-action="const-G">G</button>
+        <button class="fn" data-action="const-qe">qₑ</button>
       </div>
     </section>
 
@@ -959,6 +975,7 @@
       "clear-all": "c",
       "toggle-sign": "+/-",
       "insert-exp": "exp",
+      "log-y-x": "log_y_x",
       "hyp-toggle": "hyp",
       "to-rad": "to rad",
       "to-deg": "to deg",
@@ -967,7 +984,8 @@
       "imag-part": "imag()",
       "modulo": "x mod y",
       "rand": "ran#",
-      "std-dev": "std dev",
+      "std-dev-p": "std dev p",
+      "std-dev-s": "std dev s",
       "dec-part": "dec part",
       "det": "det",
       "hadamard-mul": "h mul",
@@ -975,7 +993,7 @@
       "mat-exp": "exp(mat)",
       "mat-pow": "mat x^y",
       "undo": "undo",
-      "const-euler-gamma": "gamma",
+      "const-euler-gamma": "γ",
       "const-psi": "ψ",
       "const-c": "c",
       "const-mol": "mol",
@@ -984,6 +1002,7 @@
       "const-epsilon0": "epsilon_0",
       "const-mu0": "mu_0",
       "const-G": "g",
+      "const-qe": "q_e",
     };
     const tooltipIdKeyMap = {
       "help-open-btn": "help",
@@ -1013,9 +1032,14 @@
       const entries = new Map();
       const lines = String(markdownText || "").split(/\r?\n/);
       for (const line of lines) {
-        const match = line.match(/^\s*-\s*`([^`]+)`\s*:\s*(.+?)\s*$/);
+        const match = line.match(/^\s*-\s*(.+?)\s*:\s*(.+?)\s*$/);
         if (!match) continue;
-        entries.set(normalizeTooltipKey(match[1]), match[2].trim());
+        const keyRegion = match[1];
+        const description = match[2].trim();
+        const keyMatches = [...keyRegion.matchAll(/`([^`]+)`/g)];
+        for (const keyMatch of keyMatches) {
+          entries.set(normalizeTooltipKey(keyMatch[1]), description);
+        }
       }
       return entries;
     }
@@ -1776,7 +1800,8 @@
         "const-hbar": 1.054571817e-34,
         "const-epsilon0": 8.8541878128e-12,
         "const-mu0": 1.25663706212e-6,
-        "const-G": 6.67430e-11
+        "const-G": 6.67430e-11,
+        "const-qe": -1.602176634e-19
       };
       if (Object.prototype.hasOwnProperty.call(constantMap, action)) {
         call("push_real", constantMap[action]);
@@ -1799,22 +1824,40 @@
         sin: "sin",
         cos: "cos",
         tan: "tan",
+        sec: "sec",
+        csc: "csc",
+        cot: "cot",
         asin: "asin",
         acos: "acos",
+        asec: "asec",
+        acsc: "acsc",
         atan: "atan",
+        acot: "acot",
         sinh: "sinh",
         cosh: "cosh",
         tanh: "tanh",
+        sech: "sech",
+        csch: "csch",
+        coth: "coth",
         asinh: "asinh",
         acosh: "acosh",
+        asech: "asech",
+        acsch: "acsch",
         atanh: "atanh",
+        acoth: "acoth",
         exp: "exp",
         exp10: "exp10",
         exp2: "exp2",
         log10: "log10",
         log2: "log2",
+        "log-y-x": "log_y_x",
         gamma: "gamma",
         erf: "erf",
+        erfc: "erfc",
+        bessel: "bessel",
+        mbessel: "mbessel",
+        sinc: "sinc",
+        neg: "neg",
         inv: "inv",
         square: "square",
         root: "root",
@@ -1863,7 +1906,10 @@
         mean: "mean",
         mode: "mode",
         variance: "variance",
-        "std-dev": "std_dev",
+        "std-dev-p": "std_dev_p",
+        "std-dev-s": "std_dev_s",
+        median: "median",
+        quart: "quart",
         max: "max_value",
         min: "min_value",
         undo: "undo"

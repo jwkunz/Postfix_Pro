@@ -145,6 +145,23 @@ impl Calculator {
         })
     }
 
+    /// Executes the `neg` operation.
+    pub fn neg(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(-v)),
+            Value::Complex(c) => Ok(Value::Complex(Complex {
+                re: -c.re,
+                im: -c.im,
+            })),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                Ok(Complex {
+                    re: -entry.re,
+                    im: -entry.im,
+                })
+            })?)),
+        })
+    }
+
     /// Executes the `sqrt` operation.
     pub fn sqrt(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
@@ -238,6 +255,74 @@ impl Calculator {
                 "erf",
                 |v| Ok(Self::real_erf(v)),
             )?)),
+        })
+    }
+
+    /// Executes the `erfc` operation.
+    pub fn erfc(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(Self::real_erfc(*v))),
+            Value::Complex(_) => Err(CalcError::TypeMismatch(
+                "erfc currently supports real values only".to_string(),
+            )),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "erfc",
+                |v| Ok(Self::real_erfc(v)),
+            )?)),
+        })
+    }
+
+    /// Executes the `bessel` operation.
+    pub fn bessel(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(Self::real_bessel_j0(*v))),
+            Value::Complex(_) => Err(CalcError::TypeMismatch(
+                "bessel currently supports real values only".to_string(),
+            )),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "bessel",
+                |v| Ok(Self::real_bessel_j0(v)),
+            )?)),
+        })
+    }
+
+    /// Executes the `mbessel` operation.
+    pub fn mbessel(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(Self::real_modified_bessel_i0(*v))),
+            Value::Complex(_) => Err(CalcError::TypeMismatch(
+                "mbessel currently supports real values only".to_string(),
+            )),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "mbessel",
+                |v| Ok(Self::real_modified_bessel_i0(v)),
+            )?)),
+        })
+    }
+
+    /// Executes the `sinc` operation.
+    pub fn sinc(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(Self::real_sinc(*v))),
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    Ok(Value::Real(1.0))
+                } else {
+                    Ok(Value::Complex(Self::from_complex64(z.sin() / z)))
+                }
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    Ok(Complex { re: 1.0, im: 0.0 })
+                } else {
+                    Ok(Self::from_complex64(z.sin() / z))
+                }
+            })?)),
         })
     }
 
@@ -419,6 +504,48 @@ impl Calculator {
                 Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
                     Ok(Self::from_complex64(Self::to_complex64(entry).ln() / ln2))
                 })?))
+            }
+        })
+    }
+
+    /// Executes the `log_y_x` operation.
+    pub fn log_y_x(&mut self) -> Result<(), CalcError> {
+        self.apply_binary_op(|left, right| {
+            if let Some(value) =
+                Self::matrix_elementwise_binary(left, right, "log_y_x", |lhs, rhs| {
+                    let ln_base = lhs.ln();
+                    if ln_base.norm() < 1e-12 {
+                        return Err(CalcError::DomainError(
+                            "log_y_x base produces an undefined logarithm".to_string(),
+                        ));
+                    }
+                    Ok(rhs.ln() / ln_base)
+                })?
+            {
+                return Ok(value);
+            }
+            match (left, right) {
+                (Value::Real(base), Value::Real(x)) => {
+                    if *base <= 0.0 || *base == 1.0 || *x <= 0.0 {
+                        return Err(CalcError::DomainError(
+                            "log_y_x requires real values with base > 0, base != 1, and x > 0"
+                                .to_string(),
+                        ));
+                    }
+                    Ok(Value::Real(x.log(*base)))
+                }
+                _ => {
+                    let base = Self::as_complex(left, "log_y_x")?;
+                    let x = Self::as_complex(right, "log_y_x")?;
+                    let ln_base = Self::to_complex64(base).ln();
+                    if ln_base.norm() < 1e-12 {
+                        return Err(CalcError::DomainError(
+                            "log_y_x base produces an undefined logarithm".to_string(),
+                        ));
+                    }
+                    let out = Self::to_complex64(x).ln() / ln_base;
+                    Ok(Value::Complex(Self::from_complex64(out)))
+                }
             }
         })
     }

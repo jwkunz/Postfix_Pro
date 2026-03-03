@@ -151,6 +151,202 @@ impl Calculator {
         })
     }
 
+    /// Executes the `sec` operation.
+    pub fn sec(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let radians = match mode {
+                    AngleMode::Deg => v.to_radians(),
+                    AngleMode::Rad => *v,
+                };
+                let cos = radians.cos();
+                if cos.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real(1.0 / cos))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c).cos();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64(Complex64::new(1.0, 0.0) / z)))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry).cos();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64(Complex64::new(1.0, 0.0) / z))
+            })?)),
+        })
+    }
+
+    /// Executes the `csc` operation.
+    pub fn csc(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let radians = match mode {
+                    AngleMode::Deg => v.to_radians(),
+                    AngleMode::Rad => *v,
+                };
+                let sin = radians.sin();
+                if sin.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real(1.0 / sin))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c).sin();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64(Complex64::new(1.0, 0.0) / z)))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry).sin();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64(Complex64::new(1.0, 0.0) / z))
+            })?)),
+        })
+    }
+
+    /// Executes the `cot` operation.
+    pub fn cot(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let radians = match mode {
+                    AngleMode::Deg => v.to_radians(),
+                    AngleMode::Rad => *v,
+                };
+                let tan = radians.tan();
+                if tan.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real(1.0 / tan))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c).tan();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64(Complex64::new(1.0, 0.0) / z)))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry).tan();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64(Complex64::new(1.0, 0.0) / z))
+            })?)),
+        })
+    }
+
+    /// Executes the `asec` operation.
+    pub fn asec(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                if v.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                let radians = (1.0 / v).acos();
+                let out = match mode {
+                    AngleMode::Deg => radians.to_degrees(),
+                    AngleMode::Rad => radians,
+                };
+                Ok(Value::Real(out))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64((Complex64::new(1.0, 0.0) / z).acos())))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64((Complex64::new(1.0, 0.0) / z).acos()))
+            })?)),
+        })
+    }
+
+    /// Executes the `acsc` operation.
+    pub fn acsc(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                if v.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                let radians = (1.0 / v).asin();
+                let out = match mode {
+                    AngleMode::Deg => radians.to_degrees(),
+                    AngleMode::Rad => radians,
+                };
+                Ok(Value::Real(out))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64((Complex64::new(1.0, 0.0) / z).asin())))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64((Complex64::new(1.0, 0.0) / z).asin()))
+            })?)),
+        })
+    }
+
+    /// Executes the `acot` operation.
+    pub fn acot(&mut self) -> Result<(), CalcError> {
+        let mode = self.state.angle_mode;
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let radians = if v.abs() < 1e-12 {
+                    std::f64::consts::FRAC_PI_2
+                } else {
+                    (1.0 / v).atan()
+                };
+                let out = match mode {
+                    AngleMode::Deg => radians.to_degrees(),
+                    AngleMode::Rad => radians,
+                };
+                Ok(Value::Real(out))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    return Ok(Value::Real(std::f64::consts::FRAC_PI_2));
+                }
+                Ok(Value::Complex(Self::from_complex64((Complex64::new(1.0, 0.0) / z).atan())))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    return Ok(Complex {
+                        re: std::f64::consts::FRAC_PI_2,
+                        im: 0.0,
+                    });
+                }
+                Ok(Self::from_complex64((Complex64::new(1.0, 0.0) / z).atan()))
+            })?)),
+        })
+    }
+
     /// Executes the `sinh` operation.
     pub fn sinh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
@@ -244,6 +440,159 @@ impl Calculator {
                     Ok(Self::from_complex64(Self::to_complex64(entry).atanh()))
                 })?))
             }
+        })
+    }
+
+    /// Executes the `sech` operation.
+    pub fn sech(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => Ok(Value::Real(1.0 / v.cosh())),
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c).cosh();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64(Complex64::new(1.0, 0.0) / z)))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry).cosh();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64(Complex64::new(1.0, 0.0) / z))
+            })?)),
+        })
+    }
+
+    /// Executes the `csch` operation.
+    pub fn csch(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let s = v.sinh();
+                if s.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real(1.0 / s))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c).sinh();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64(Complex64::new(1.0, 0.0) / z)))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry).sinh();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64(Complex64::new(1.0, 0.0) / z))
+            })?)),
+        })
+    }
+
+    /// Executes the `coth` operation.
+    pub fn coth(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                let t = v.tanh();
+                if t.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real(1.0 / t))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c).tanh();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64(Complex64::new(1.0, 0.0) / z)))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry).tanh();
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64(Complex64::new(1.0, 0.0) / z))
+            })?)),
+        })
+    }
+
+    /// Executes the `asech` operation.
+    pub fn asech(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                if v.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real((1.0 / v).acosh()))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64((Complex64::new(1.0, 0.0) / z).acosh())))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64((Complex64::new(1.0, 0.0) / z).acosh()))
+            })?)),
+        })
+    }
+
+    /// Executes the `acsch` operation.
+    pub fn acsch(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                if v.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real((1.0 / v).asinh()))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64((Complex64::new(1.0, 0.0) / z).asinh())))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64((Complex64::new(1.0, 0.0) / z).asinh()))
+            })?)),
+        })
+    }
+
+    /// Executes the `acoth` operation.
+    pub fn acoth(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Real(v) => {
+                if v.abs() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Real((1.0 / v).atanh()))
+            }
+            Value::Complex(c) => {
+                let z = Self::to_complex64(*c);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Value::Complex(Self::from_complex64((Complex64::new(1.0, 0.0) / z).atanh())))
+            }
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                let z = Self::to_complex64(entry);
+                if z.norm() < 1e-12 {
+                    return Err(CalcError::DivideByZero);
+                }
+                Ok(Self::from_complex64((Complex64::new(1.0, 0.0) / z).atanh()))
+            })?)),
         })
     }
 

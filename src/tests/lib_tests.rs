@@ -667,10 +667,10 @@
 
         calc.clear_all();
         calc.push_value(Value::Matrix(matrix(1, 2, &[3.0, 4.0])));
-        assert_eq!(calc.std_dev(), Ok(()));
+        assert_eq!(calc.std_dev_p(), Ok(()));
         match calc.state().stack.as_slice() {
             [Value::Real(v)] => assert_real_close(*v, 0.5, 1e-12),
-            other => panic!("expected real std_dev value, got {other:?}"),
+            other => panic!("expected real std_dev_p value, got {other:?}"),
         }
 
         calc.clear_all();
