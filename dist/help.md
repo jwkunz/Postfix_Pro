@@ -29,6 +29,8 @@ Stack labels:
 ## Matrix Panel
 
 - `Push A`, `Push B`: parse matrix text and push to stack
+- `Import CSV -> A`: load a CSV file into Matrix A text area and size controls
+- `Export Top CSV`: write the top-of-stack matrix to a downloadable `matrix.csv` file
 - `Size A` / `Size B` controls:
   - set rows + columns
   - press `Apply` to regenerate matrix text with that size

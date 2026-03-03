@@ -676,6 +676,9 @@
         <div class="matrix-presets">
           <button class="fn" id="preset-a-btn">Preset A 2x2</button>
           <button class="fn" id="preset-b-btn">Preset B vec</button>
+          <button class="fn" id="import-csv-btn">Import CSV -> A</button>
+          <button class="fn" id="export-csv-btn">Export Top CSV</button>
+          <input id="matrix-csv-input" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import matrix CSV">
           <div class="identity">
             <input id="identity-size-input" type="number" min="1" step="1" value="3" aria-label="Identity size">
             <button class="fn" id="push-identity-btn">Push I(n)</button>
@@ -845,6 +848,9 @@
     const solveBtn = document.getElementById("solve-btn");
     const presetABtn = document.getElementById("preset-a-btn");
     const presetBBtn = document.getElementById("preset-b-btn");
+    const importCsvBtn = document.getElementById("import-csv-btn");
+    const exportCsvBtn = document.getElementById("export-csv-btn");
+    const matrixCsvInput = document.getElementById("matrix-csv-input");
     const identitySizeInput = document.getElementById("identity-size-input");
     const pushIdentityBtn = document.getElementById("push-identity-btn");
     const complexEntryMode = document.getElementById("complex-entry-mode");
@@ -1173,6 +1179,126 @@
         return;
       }
       textarea.value = matrixTemplate(rows, cols);
+      setError("");
+    }
+
+    function parseCsvRow(rowText) {
+      const cells = [];
+      let current = "";
+      let inQuotes = false;
+      let depth = 0;
+      for (let i = 0; i < rowText.length; i += 1) {
+        const ch = rowText[i];
+        if (ch === """) {
+          if (inQuotes && rowText[i + 1] === """) {
+            current += """;
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+          continue;
+        }
+        if (!inQuotes) {
+          if (ch === "(") depth += 1;
+          if (ch === ")") depth -= 1;
+          if (ch === "," && depth === 0) {
+            cells.push(current.trim());
+            current = "";
+            continue;
+          }
+        }
+        current += ch;
+      }
+      if (inQuotes) {
+        return { error: "CSV has unmatched quote in row" };
+      }
+      if (depth !== 0) {
+        return { error: "CSV row has unmatched parentheses" };
+      }
+      cells.push(current.trim());
+      return { cells };
+    }
+
+    function importCsvTextIntoMatrixA(csvText) {
+      const lines = String(csvText || "")
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (!lines.length) {
+        setError("CSV file is empty");
+        return;
+      }
+
+      const parsedRows = [];
+      for (const line of lines) {
+        const parsed = parseCsvRow(line);
+        if (parsed.error) {
+          setError(parsed.error);
+          return;
+        }
+        const row = parsed.cells.filter((cell) => cell.length > 0);
+        if (!row.length) {
+          setError("CSV row is empty");
+          return;
+        }
+        parsedRows.push(row);
+      }
+
+      const cols = parsedRows[0].length;
+      for (const row of parsedRows) {
+        if (row.length !== cols) {
+          setError("CSV rows must have the same number of columns");
+          return;
+        }
+      }
+
+      for (const row of parsedRows) {
+        for (const token of row) {
+          const parsed = parseMatrixToken(token);
+          if (parsed.error) {
+            setError(parsed.error);
+            return;
+          }
+        }
+      }
+
+      matrixAInput.value = parsedRows.map((row) => row.join(" ")).join("\n");
+      matrixARowsInput.value = String(parsedRows.length);
+      matrixAColsInput.value = String(cols);
+      setError("");
+    }
+
+    function matrixEntryToCsvCell(entry) {
+      const re = Number(entry && entry.re !== undefined ? entry.re : 0);
+      const im = Number(entry && entry.im !== undefined ? entry.im : 0);
+      if (Math.abs(im) < 1e-12) return re.toString();
+      const text = "(" + re.toString() + "," + im.toString() + ")";
+      return """ + text + """;
+    }
+
+    function exportTopMatrixToCsv() {
+      const top = lastState && lastState.stack ? lastState.stack[lastState.stack.length - 1] : null;
+      if (!top || top.type !== "matrix") {
+        setError("top of stack is not a matrix");
+        return;
+      }
+      const rows = [];
+      for (let r = 0; r < top.rows; r += 1) {
+        const start = r * top.cols;
+        const end = start + top.cols;
+        const cells = (top.data || []).slice(start, end).map(matrixEntryToCsvCell);
+        rows.push(cells.join(","));
+      }
+      const csv = rows.join("\n") + "\n";
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "matrix.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
       setError("");
     }
 
@@ -1561,6 +1687,27 @@
       matrixBRowsInput.value = "2";
       matrixBColsInput.value = "1";
       setError("");
+    });
+
+    importCsvBtn.addEventListener("click", () => {
+      matrixCsvInput.click();
+    });
+
+    matrixCsvInput.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      if (!file) return;
+      try {
+        const text = await file.text();
+        importCsvTextIntoMatrixA(text);
+      } catch (_) {
+        setError("failed to read CSV file");
+      } finally {
+        matrixCsvInput.value = "";
+      }
+    });
+
+    exportCsvBtn.addEventListener("click", () => {
+      exportTopMatrixToCsv();
     });
 
     applyASizeBtn.addEventListener("click", () => {
