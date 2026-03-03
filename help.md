@@ -13,8 +13,8 @@ Stack labels:
 
 ## Scalar Keypad
 
-- `RAD`: set angle mode to radians
-- `DEG`: set angle mode to degrees
+- `RAD/DEG`: toggle angle mode between radians and degrees
+- `Pick`: use top stack integer as stack line index (`#n`) and replace top with that copied value
 - `CE`: clear current entry buffer
 - `C`: clear stack + entry
 - `Drop`: remove top stack value
@@ -36,8 +36,18 @@ Stack labels:
 ### Matrix Operations
 
 - `Push`: parse matrix text and push to stack (use repeatedly to push multiple matrices)
-- `stack vec`: convert all scalar stack values into one column vector matrix
-- `ravel`: if top is a matrix, row-scan into one long column vector; if top is a vector (`Nx1` or `1xN`), unpack entries to stack scalars
+- `hstack`: top-of-stack is integer count `n`; consumes `n` stack values and combines horizontally
+  - scalars -> `1xN` row vector
+  - equal-size row vectors -> wider row vector
+  - equal-size column vectors -> matrix by column concatenation
+  - equal-size matrices -> horizontal block concatenation
+- `vstack`: same count-driven behavior as `hstack`, but combines vertically
+  - scalars -> `Nx1` column vector
+  - equal-size row vectors -> matrix by row concatenation
+  - equal-size column vectors -> taller column vector
+  - equal-size matrices -> vertical block concatenation
+- `hravel`: if top is matrix, split into column vectors on stack; if top is vector, unpack entries to stack scalars
+- `vravel`: if top is matrix, split into row vectors on stack; if top is vector, unpack entries to stack scalars
 - `Import CSV -> A`: load a CSV file into the Matrix Entry text area and size controls
 - `Export Top CSV`: write the top-of-stack matrix to a downloadable `matrix.csv` file
 - `Size A` controls:

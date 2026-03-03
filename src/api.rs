@@ -188,6 +188,11 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn pick_from_stack_index(&mut self) -> ApiResponse {
+        let result = self.calculator.pick_from_stack_index();
+        self.wrap(result)
+    }
+
     pub fn pow(&mut self) -> ApiResponse {
         let result = self.calculator.pow();
         self.wrap(result)
@@ -607,8 +612,28 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn hstack(&mut self) -> ApiResponse {
+        let result = self.calculator.hstack();
+        self.wrap(result)
+    }
+
+    pub fn vstack(&mut self) -> ApiResponse {
+        let result = self.calculator.vstack();
+        self.wrap(result)
+    }
+
     pub fn ravel(&mut self) -> ApiResponse {
         let result = self.calculator.ravel();
+        self.wrap(result)
+    }
+
+    pub fn hravel(&mut self) -> ApiResponse {
+        let result = self.calculator.hravel();
+        self.wrap(result)
+    }
+
+    pub fn vravel(&mut self) -> ApiResponse {
+        let result = self.calculator.vravel();
         self.wrap(result)
     }
 
@@ -830,6 +855,11 @@ mod wasm {
 
         pub fn pick(&mut self, depth: usize) -> String {
             serde_json::to_string(&self.inner.pick(depth))
+                .expect("response serialization should succeed")
+        }
+
+        pub fn pick_from_stack_index(&mut self) -> String {
+            serde_json::to_string(&self.inner.pick_from_stack_index())
                 .expect("response serialization should succeed")
         }
 
@@ -1236,8 +1266,28 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn hstack(&mut self) -> String {
+            serde_json::to_string(&self.inner.hstack())
+                .expect("response serialization should succeed")
+        }
+
+        pub fn vstack(&mut self) -> String {
+            serde_json::to_string(&self.inner.vstack())
+                .expect("response serialization should succeed")
+        }
+
         pub fn ravel(&mut self) -> String {
             serde_json::to_string(&self.inner.ravel())
+                .expect("response serialization should succeed")
+        }
+
+        pub fn hravel(&mut self) -> String {
+            serde_json::to_string(&self.inner.hravel())
+                .expect("response serialization should succeed")
+        }
+
+        pub fn vravel(&mut self) -> String {
+            serde_json::to_string(&self.inner.vravel())
                 .expect("response serialization should succeed")
         }
 
@@ -1513,6 +1563,75 @@ mod tests {
                 ApiValue::Real { value: 3.0 },
             ]
         );
+    }
+
+    #[test]
+    fn hstack_vstack_and_split_ravel_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_real(1.0);
+        api.push_real(2.0);
+        api.push_real(3.0);
+        api.push_real(3.0);
+        let hstack_response = api.hstack();
+        assert!(hstack_response.ok);
+        assert_eq!(
+            hstack_response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 1,
+                cols: 3,
+                data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0)]
+            }]
+        );
+
+        api.clear_all();
+        api.push_real(1.0);
+        api.push_real(2.0);
+        api.push_real(3.0);
+        api.push_real(3.0);
+        let vstack_response = api.vstack();
+        assert!(vstack_response.ok);
+        assert_eq!(
+            vstack_response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 3,
+                cols: 1,
+                data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0)]
+            }]
+        );
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 3,
+            data: vec![
+                c(1.0, 0.0),
+                c(2.0, 0.0),
+                c(3.0, 0.0),
+                c(4.0, 0.0),
+                c(5.0, 0.0),
+                c(6.0, 0.0),
+            ],
+        });
+        let hravel_response = api.hravel();
+        assert!(hravel_response.ok);
+        assert_eq!(hravel_response.state.stack.len(), 3);
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 3,
+            data: vec![
+                c(1.0, 0.0),
+                c(2.0, 0.0),
+                c(3.0, 0.0),
+                c(4.0, 0.0),
+                c(5.0, 0.0),
+                c(6.0, 0.0),
+            ],
+        });
+        let vravel_response = api.vravel();
+        assert!(vravel_response.ok);
+        assert_eq!(vravel_response.state.stack.len(), 2);
     }
 
     #[test]
@@ -2069,6 +2188,21 @@ mod tests {
                 ApiValue::Real { value: 4.0 },
                 ApiValue::Real { value: 1.0 },
                 ApiValue::Real { value: 4.0 }
+            ]
+        );
+
+        api.push_real(1.0);
+        let pick_index_response = api.pick_from_stack_index();
+        assert!(pick_index_response.ok);
+        assert_eq!(
+            pick_index_response.state.stack,
+            vec![
+                ApiValue::Real { value: 2.0 },
+                ApiValue::Real { value: 3.0 },
+                ApiValue::Real { value: 4.0 },
+                ApiValue::Real { value: 1.0 },
+                ApiValue::Real { value: 4.0 },
+                ApiValue::Real { value: 3.0 }
             ]
         );
     }

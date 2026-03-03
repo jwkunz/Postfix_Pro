@@ -209,6 +209,33 @@ impl Calculator {
         Ok(())
     }
 
+    pub fn pick_from_stack_index(&mut self) -> Result<(), CalcError> {
+        self.require_stack_len(2)?;
+        let len = self.state.stack.len();
+        let index = match self.state.stack.get(len - 1) {
+            Some(Value::Real(v)) => Self::as_non_negative_integer(*v, "pick index")? as usize,
+            Some(Value::Complex(c)) if c.im.abs() <= 1e-12 => {
+                Self::as_non_negative_integer(c.re, "pick index")? as usize
+            }
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "pick index must be a non-negative integer scalar".to_string(),
+                ));
+            }
+        };
+
+        if index >= len - 1 {
+            return Err(CalcError::InvalidInput(format!(
+                "pick index out of range: {index} (stack lines are 0..{})",
+                len - 2
+            )));
+        }
+
+        let value = self.state.stack[index].clone();
+        self.state.stack[len - 1] = value;
+        Ok(())
+    }
+
     pub fn add(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_add(a, b)?)),
@@ -1268,6 +1295,14 @@ impl Calculator {
         Ok(())
     }
 
+    pub fn hstack(&mut self) -> Result<(), CalcError> {
+        self.stack_combine(true)
+    }
+
+    pub fn vstack(&mut self) -> Result<(), CalcError> {
+        self.stack_combine(false)
+    }
+
     pub fn ravel(&mut self) -> Result<(), CalcError> {
         self.require_stack_len(1)?;
         let len = self.state.stack.len();
@@ -1295,6 +1330,14 @@ impl Calculator {
             self.state.stack[len - 1] = Value::Matrix(vector);
             Ok(())
         }
+    }
+
+    pub fn hravel(&mut self) -> Result<(), CalcError> {
+        self.matrix_ravel(true)
+    }
+
+    pub fn vravel(&mut self) -> Result<(), CalcError> {
+        self.matrix_ravel(false)
     }
 
     pub fn determinant(&mut self) -> Result<(), CalcError> {
@@ -1626,6 +1669,163 @@ impl Calculator {
         let result = op(left, right)?;
         self.state.stack.truncate(len - 2);
         self.state.stack.push(result);
+        Ok(())
+    }
+
+    fn stack_count_value(value: &Value, label: &str) -> Result<usize, CalcError> {
+        let count = match value {
+            Value::Real(v) => Self::as_non_negative_integer(*v, label)?,
+            Value::Complex(c) if c.im.abs() <= 1e-12 => Self::as_non_negative_integer(c.re, label)?,
+            _ => {
+                return Err(CalcError::TypeMismatch(format!(
+                    "{label} must be a non-negative integer scalar"
+                )));
+            }
+        };
+        usize::try_from(count)
+            .map_err(|_| CalcError::InvalidInput(format!("{label} is too large for this platform")))
+    }
+
+    fn stack_combine(&mut self, horizontal: bool) -> Result<(), CalcError> {
+        self.require_stack_len(2)?;
+        let len = self.state.stack.len();
+        let count = Self::stack_count_value(
+            self.state
+                .stack
+                .get(len - 1)
+                .expect("prechecked count value"),
+            if horizontal {
+                "hstack count"
+            } else {
+                "vstack count"
+            },
+        )?;
+        if count == 0 {
+            return Err(CalcError::InvalidInput(
+                "stack combine count must be at least 1".to_string(),
+            ));
+        }
+        if len - 1 < count {
+            return Err(CalcError::StackUnderflow {
+                needed: count + 1,
+                available: len,
+            });
+        }
+
+        let start = len - 1 - count;
+        let values = self.state.stack[start..len - 1].to_vec();
+        let result = if values
+            .iter()
+            .all(|value| matches!(value, Value::Real(_) | Value::Complex(_)))
+        {
+            let data = values
+                .iter()
+                .map(|value| match value {
+                    Value::Real(v) => Complex { re: *v, im: 0.0 },
+                    Value::Complex(c) => *c,
+                    Value::Matrix(_) => unreachable!("scalar prechecked"),
+                })
+                .collect::<Vec<_>>();
+            if horizontal {
+                Matrix::new(1, data.len(), data)?
+            } else {
+                Matrix::new(data.len(), 1, data)?
+            }
+        } else if values.iter().all(|value| matches!(value, Value::Matrix(_))) {
+            let matrices = values
+                .iter()
+                .map(|value| match value {
+                    Value::Matrix(matrix) => matrix,
+                    _ => unreachable!("matrix prechecked"),
+                })
+                .collect::<Vec<_>>();
+            let first = matrices[0];
+            if matrices
+                .iter()
+                .any(|matrix| matrix.rows != first.rows || matrix.cols != first.cols)
+            {
+                return Err(CalcError::DimensionMismatch {
+                    expected: first.rows * first.cols,
+                    actual: matrices
+                        .iter()
+                        .find(|matrix| matrix.rows != first.rows || matrix.cols != first.cols)
+                        .map(|matrix| matrix.rows * matrix.cols)
+                        .unwrap_or(first.rows * first.cols),
+                });
+            }
+
+            if horizontal {
+                let mut data = Vec::with_capacity(first.rows * first.cols * matrices.len());
+                for row in 0..first.rows {
+                    for matrix in &matrices {
+                        let row_start = row * first.cols;
+                        let row_end = row_start + first.cols;
+                        data.extend_from_slice(&matrix.data[row_start..row_end]);
+                    }
+                }
+                Matrix::new(first.rows, first.cols * matrices.len(), data)?
+            } else {
+                let mut data = Vec::with_capacity(first.rows * first.cols * matrices.len());
+                for matrix in &matrices {
+                    data.extend_from_slice(&matrix.data);
+                }
+                Matrix::new(first.rows * matrices.len(), first.cols, data)?
+            }
+        } else {
+            return Err(CalcError::TypeMismatch(
+                "stack combine values must all be scalars or all be matrices".to_string(),
+            ));
+        };
+
+        self.state.stack.truncate(start);
+        self.state.stack.push(Value::Matrix(result));
+        Ok(())
+    }
+
+    fn matrix_ravel(&mut self, horizontal: bool) -> Result<(), CalcError> {
+        self.require_stack_len(1)?;
+        let len = self.state.stack.len();
+        let matrix = match self.state.stack.get(len - 1) {
+            Some(Value::Matrix(matrix)) => matrix.clone(),
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "ravel requires a matrix value".to_string(),
+                ));
+            }
+        };
+        self.state.stack.truncate(len - 1);
+
+        if matrix.rows == 1 || matrix.cols == 1 {
+            for entry in matrix.data {
+                if entry.im.abs() <= 1e-12 {
+                    self.state.stack.push(Value::Real(entry.re));
+                } else {
+                    self.state.stack.push(Value::Complex(entry));
+                }
+            }
+            return Ok(());
+        }
+
+        if horizontal {
+            for col in 0..matrix.cols {
+                let mut data = Vec::with_capacity(matrix.rows);
+                for row in 0..matrix.rows {
+                    data.push(matrix.data[row * matrix.cols + col]);
+                }
+                self.state
+                    .stack
+                    .push(Value::Matrix(Matrix::new(matrix.rows, 1, data)?));
+            }
+        } else {
+            for row in 0..matrix.rows {
+                let start = row * matrix.cols;
+                let end = start + matrix.cols;
+                let data = matrix.data[start..end].to_vec();
+                self.state
+                    .stack
+                    .push(Value::Matrix(Matrix::new(1, matrix.cols, data)?));
+            }
+        }
         Ok(())
     }
 
@@ -3237,6 +3437,93 @@ mod tests {
     }
 
     #[test]
+    fn hstack_and_vstack_combine_scalars_and_matrices() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Real(1.0));
+        calc.push_value(Value::Real(2.0));
+        calc.push_value(Value::Real(3.0));
+        calc.push_value(Value::Real(3.0));
+        assert_eq!(calc.hstack(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(1, 3, &[1.0, 2.0, 3.0]))]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Real(1.0));
+        calc.push_value(Value::Real(2.0));
+        calc.push_value(Value::Real(3.0));
+        calc.push_value(Value::Real(3.0));
+        assert_eq!(calc.vstack(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(3, 1, &[1.0, 2.0, 3.0]))]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+        calc.push_value(Value::Matrix(matrix(2, 2, &[5.0, 6.0, 7.0, 8.0])));
+        calc.push_value(Value::Real(2.0));
+        assert_eq!(calc.hstack(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(
+                2,
+                4,
+                &[1.0, 2.0, 5.0, 6.0, 3.0, 4.0, 7.0, 8.0]
+            ))]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+        calc.push_value(Value::Matrix(matrix(2, 2, &[5.0, 6.0, 7.0, 8.0])));
+        calc.push_value(Value::Real(2.0));
+        assert_eq!(calc.vstack(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(
+                4,
+                2,
+                &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+            ))]
+        );
+    }
+
+    #[test]
+    fn hravel_and_vravel_split_matrices_and_vectors() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0])));
+        assert_eq!(calc.hravel(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![
+                Value::Matrix(matrix(2, 1, &[1.0, 4.0])),
+                Value::Matrix(matrix(2, 1, &[2.0, 5.0])),
+                Value::Matrix(matrix(2, 1, &[3.0, 6.0])),
+            ]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(2, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0])));
+        assert_eq!(calc.vravel(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![
+                Value::Matrix(matrix(1, 3, &[1.0, 2.0, 3.0])),
+                Value::Matrix(matrix(1, 3, &[4.0, 5.0, 6.0])),
+            ]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[7.0, 8.0, 9.0])));
+        assert_eq!(calc.hravel(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Real(7.0), Value::Real(8.0), Value::Real(9.0)]
+        );
+    }
+
+    #[test]
     fn matrix_and_complex_multiplication_scales_matrix() {
         let mut calc = Calculator::new();
         calc.push_value(Value::Matrix(matrix(1, 1, &[3.0])));
@@ -4023,6 +4310,28 @@ mod tests {
         calc.push_value(Value::Real(30.0));
 
         let result = calc.pick(2);
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![
+                Value::Real(10.0),
+                Value::Real(20.0),
+                Value::Real(30.0),
+                Value::Real(20.0)
+            ]
+        );
+    }
+
+    #[test]
+    fn pick_from_stack_index_replaces_top_value() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Real(10.0));
+        calc.push_value(Value::Real(20.0));
+        calc.push_value(Value::Real(30.0));
+        calc.push_value(Value::Real(1.0));
+
+        let result = calc.pick_from_stack_index();
 
         assert_eq!(result, Ok(()));
         assert_eq!(

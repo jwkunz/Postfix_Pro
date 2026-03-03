@@ -612,8 +612,8 @@
       <p class="keypad-guide">RPN flow: build number -> <code>Enter</code> -> apply operation.</p>
 
       <div class="keys" id="keypad">
-        <button class="fn" data-action="set-rad">RAD</button>
-        <button class="fn" data-action="set-deg">DEG</button>
+        <button class="fn" data-action="toggle-angle">RAD/DEG</button>
+        <button class="fn" data-action="pick-top-index">Pick</button>
         <button class="danger" data-action="clear-entry">CE</button>
         <button class="danger" data-action="clear-all">C</button>
 
@@ -673,8 +673,10 @@
         </div>
         <button class="fn" id="import-csv-btn">Import CSV</button>
         <button class="fn" id="export-csv-btn">Export CSV</button>
-        <button class="fn" id="stack-vec-btn">stack vec</button>
-        <button class="fn" id="ravel-btn">ravel</button>
+        <button class="fn" id="hstack-btn">hstack</button>
+        <button class="fn" id="vstack-btn">vstack</button>
+        <button class="fn" id="hravel-btn">hravel</button>
+        <button class="fn" id="vravel-btn">vravel</button>
         <input id="matrix-csv-input" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import matrix CSV">
 
       </div>
@@ -878,11 +880,13 @@
     const solveBtn = document.getElementById("solve-btn");
     const solveLstsqBtn = document.getElementById("solve-lstsq-btn");
     const presetABtn = document.getElementById("preset-a-btn");
-    const stackVecBtn = document.getElementById("stack-vec-btn");
+    const hstackBtn = document.getElementById("hstack-btn");
+    const vstackBtn = document.getElementById("vstack-btn");
     const importCsvBtn = document.getElementById("import-csv-btn");
     const exportCsvBtn = document.getElementById("export-csv-btn");
     const matrixCsvInput = document.getElementById("matrix-csv-input");
-    const ravelBtn = document.getElementById("ravel-btn");
+    const hravelBtn = document.getElementById("hravel-btn");
+    const vravelBtn = document.getElementById("vravel-btn");
     const identitySizeInput = document.getElementById("identity-size-input");
     const pushIdentityBtn = document.getElementById("push-identity-btn");
     const complexEntryMode = document.getElementById("complex-entry-mode");
@@ -1575,12 +1579,15 @@
         return;
       }
 
-      if (action === "set-deg") {
-        call("set_angle_mode_deg");
+      if (action === "toggle-angle") {
+        const mode = String(lastState?.angle_mode || "rad").toLowerCase();
+        if (mode === "deg") call("set_angle_mode_rad");
+        else call("set_angle_mode_deg");
         return;
       }
-      if (action === "set-rad") {
-        call("set_angle_mode_rad");
+      if (action === "pick-top-index") {
+        if (!commitEntryIfNeeded()) return;
+        call("pick_from_stack_index");
         return;
       }
       if (action === "hyp-toggle") {
@@ -1807,16 +1814,28 @@
       presetIdentityInEntry();
     });
 
-    stackVecBtn.addEventListener("click", () => {
+    hstackBtn.addEventListener("click", () => {
       if (!wasmCalc) return;
       if (!commitEntryIfNeeded()) return;
-      call("stack_vec");
+      call("hstack");
     });
 
-    ravelBtn.addEventListener("click", () => {
+    vstackBtn.addEventListener("click", () => {
       if (!wasmCalc) return;
       if (!commitEntryIfNeeded()) return;
-      call("ravel");
+      call("vstack");
+    });
+
+    hravelBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      if (!commitEntryIfNeeded()) return;
+      call("hravel");
+    });
+
+    vravelBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      if (!commitEntryIfNeeded()) return;
+      call("vravel");
     });
 
     pushComplexBtn.addEventListener("click", () => {
