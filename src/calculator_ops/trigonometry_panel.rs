@@ -1,6 +1,9 @@
+//! Calculator operations for the trigonometry panel panel.
+
 use super::*;
 
 impl Calculator {
+    /// Executes the `sin` operation.
     pub fn sin(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -20,6 +23,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `cos` operation.
     pub fn cos(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -39,6 +43,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `tan` operation.
     pub fn tan(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -71,6 +76,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `asin` operation.
     pub fn asin(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -96,6 +102,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `acos` operation.
     pub fn acos(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -121,6 +128,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `atan` operation.
     pub fn atan(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -143,6 +151,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `sinh` operation.
     pub fn sinh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.sinh())),
@@ -157,6 +166,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `cosh` operation.
     pub fn cosh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.cosh())),
@@ -171,6 +181,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `tanh` operation.
     pub fn tanh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.tanh())),
@@ -185,6 +196,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `asinh` operation.
     pub fn asinh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.asinh())),
@@ -199,6 +211,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `acosh` operation.
     pub fn acosh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if *v < 1.0 => Err(CalcError::DomainError(
@@ -216,6 +229,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `atanh` operation.
     pub fn atanh(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if v.abs() >= 1.0 => Err(CalcError::DomainError(
@@ -233,6 +247,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `to_rad` operation.
     pub fn to_rad(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.to_radians())),
@@ -247,6 +262,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `to_deg` operation.
     pub fn to_deg(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.to_degrees())),

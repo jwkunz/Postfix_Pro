@@ -1,6 +1,9 @@
+//! Calculator operations for the rounding panel panel.
+
 use super::*;
 
 impl Calculator {
+    /// Executes the `round_value` operation.
     pub fn round_value(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.round())),
@@ -15,6 +18,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `floor_value` operation.
     pub fn floor_value(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.floor())),
@@ -29,6 +33,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `ceil_value` operation.
     pub fn ceil_value(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.ceil())),
@@ -43,6 +48,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `dec_part` operation.
     pub fn dec_part(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v - v.trunc())),

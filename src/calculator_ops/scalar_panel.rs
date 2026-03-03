@@ -1,6 +1,9 @@
+//! Calculator operations for the scalar panel panel.
+
 use super::*;
 
 impl Calculator {
+    /// Executes the `add` operation.
     pub fn add(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_add(a, b)?)),
@@ -24,6 +27,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `sub` operation.
     pub fn sub(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_sub(a, b)?)),
@@ -47,6 +51,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `mul` operation.
     pub fn mul(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_mul(a, b)?)),
@@ -70,6 +75,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `div` operation.
     pub fn div(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Real(_), Value::Real(b)) if *b == 0.0 => Err(CalcError::DivideByZero),
@@ -97,6 +103,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `hadamard_mul` operation.
     pub fn hadamard_mul(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => {
@@ -117,6 +124,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `hadamard_div` operation.
     pub fn hadamard_div(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => {
@@ -137,6 +145,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `sqrt` operation.
     pub fn sqrt(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if *v < 0.0 => Err(CalcError::DomainError(
@@ -152,6 +161,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `exp` operation.
     pub fn exp(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.exp())),
@@ -164,6 +174,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `ln` operation.
     pub fn ln(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if *v <= 0.0 => Err(CalcError::DomainError(
@@ -179,6 +190,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `log10` operation.
     pub fn log10(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if *v <= 0.0 => Err(CalcError::DomainError(
@@ -199,6 +211,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `gamma` operation.
     pub fn gamma(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(Self::real_gamma(*v))),
@@ -213,6 +226,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `erf` operation.
     pub fn erf(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(Self::real_erf(*v))),
@@ -227,6 +241,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `pow` operation.
     pub fn pow(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(_), Value::Matrix(_)) => {
@@ -251,6 +266,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `percent` operation.
     pub fn percent(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(_), _) | (_, Value::Matrix(_)) => {
@@ -271,6 +287,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `inv` operation.
     pub fn inv(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => {
@@ -304,6 +321,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `square` operation.
     pub fn square(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v * v)),
@@ -320,6 +338,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `root` operation.
     pub fn root(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| {
             if let Some(value) =
@@ -350,6 +369,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `exp10` operation.
     pub fn exp10(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(10.0_f64.powf(*v))),
@@ -366,6 +386,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `exp2` operation.
     pub fn exp2(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(2.0_f64.powf(*v))),
@@ -382,6 +403,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `log2` operation.
     pub fn log2(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if *v <= 0.0 => Err(CalcError::DomainError(
@@ -401,6 +423,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `signum` operation.
     pub fn signum(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.signum())),

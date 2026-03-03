@@ -1,6 +1,9 @@
+//! Calculator operations for the matrix panel panel.
+
 use super::*;
 
 impl Calculator {
+    /// Executes the `transpose` operation.
     pub fn transpose(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_transpose(matrix))),
@@ -10,6 +13,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `push_identity` operation.
     pub fn push_identity(&mut self, size: usize) -> Result<(), CalcError> {
         if size == 0 {
             return Err(CalcError::InvalidInput(
@@ -22,6 +26,7 @@ impl Calculator {
         Ok(())
     }
 
+    /// Executes the `stack_vec` operation.
     pub fn stack_vec(&mut self) -> Result<(), CalcError> {
         if self.state.stack.is_empty() {
             return Err(CalcError::InvalidInput(
@@ -49,14 +54,17 @@ impl Calculator {
         Ok(())
     }
 
+    /// Executes the `hstack` operation.
     pub fn hstack(&mut self) -> Result<(), CalcError> {
         self.stack_combine(true)
     }
 
+    /// Executes the `vstack` operation.
     pub fn vstack(&mut self) -> Result<(), CalcError> {
         self.stack_combine(false)
     }
 
+    /// Executes the `ravel` operation.
     pub fn ravel(&mut self) -> Result<(), CalcError> {
         self.require_stack_len(1)?;
         let len = self.state.stack.len();
@@ -86,14 +94,17 @@ impl Calculator {
         }
     }
 
+    /// Executes the `hravel` operation.
     pub fn hravel(&mut self) -> Result<(), CalcError> {
         self.matrix_ravel(true)
     }
 
+    /// Executes the `vravel` operation.
     pub fn vravel(&mut self) -> Result<(), CalcError> {
         self.matrix_ravel(false)
     }
 
+    /// Executes the `determinant` operation.
     pub fn determinant(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Complex(Self::matrix_determinant(matrix)?)),
@@ -103,6 +114,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `inverse` operation.
     pub fn inverse(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_inverse(matrix)?)),
@@ -112,6 +124,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `solve_ax_b` operation.
     pub fn solve_ax_b(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_solve(a, b)?)),
@@ -121,6 +134,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `solve_lstsq` operation.
     pub fn solve_lstsq(&mut self) -> Result<Option<String>, CalcError> {
         self.require_stack_len(2)?;
         let len = self.state.stack.len();
@@ -139,6 +153,7 @@ impl Calculator {
         Ok(warning)
     }
 
+    /// Executes the `dot` operation.
     pub fn dot(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Complex(Self::matrix_dot(a, b)?)),
@@ -148,6 +163,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `cross` operation.
     pub fn cross(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Matrix(Self::matrix_cross(a, b)?)),
@@ -157,6 +173,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `trace` operation.
     pub fn trace(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Complex(Self::matrix_trace(matrix)?)),
@@ -166,6 +183,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `norm_p` operation.
     pub fn norm_p(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(matrix), Value::Real(p)) => {
@@ -180,6 +198,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `diag` operation.
     pub fn diag(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_diag(matrix)?)),
@@ -189,6 +208,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `toep` operation.
     pub fn toep(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_toeplitz(matrix)?)),
@@ -198,6 +218,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `mat_exp` operation.
     pub fn mat_exp(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_exp(matrix)?)),
@@ -207,6 +228,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `hermitian` operation.
     pub fn hermitian(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_hermitian(matrix))),
@@ -216,6 +238,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `mat_pow` operation.
     pub fn mat_pow(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(matrix), Value::Real(exp)) => {
@@ -232,6 +255,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `qr` operation.
     pub fn qr(&mut self) -> Result<(), CalcError> {
         self.require_stack_len(1)?;
         let len = self.state.stack.len();
@@ -250,6 +274,7 @@ impl Calculator {
         Ok(())
     }
 
+    /// Executes the `lu` operation.
     pub fn lu(&mut self) -> Result<(), CalcError> {
         self.require_stack_len(1)?;
         let len = self.state.stack.len();
@@ -269,6 +294,7 @@ impl Calculator {
         Ok(())
     }
 
+    /// Executes the `svd` operation.
     pub fn svd(&mut self) -> Result<(), CalcError> {
         self.require_stack_len(1)?;
         let len = self.state.stack.len();
@@ -288,6 +314,7 @@ impl Calculator {
         Ok(())
     }
 
+    /// Executes the `evd` operation.
     pub fn evd(&mut self) -> Result<Option<String>, CalcError> {
         self.require_stack_len(1)?;
         let len = self.state.stack.len();

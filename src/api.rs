@@ -1,24 +1,37 @@
+//! Serializable API surface for driving the calculator from JavaScript/WASM.
+
 use serde::{Deserialize, Serialize};
 
 use crate::{AngleMode, CalcError, Calculator, Complex, DisplayMode, Matrix, Value};
 
+/// Serialized value payload used by API requests/responses.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ApiValue {
+    /// Real scalar value.
     Real {
+        /// Numeric value.
         value: f64,
     },
+    /// Complex scalar value.
     Complex {
+        /// Real component.
         re: f64,
+        /// Imaginary component.
         im: f64,
     },
+    /// Dense matrix value with row-major complex data.
     Matrix {
+        /// Number of rows.
         rows: usize,
+        /// Number of columns.
         cols: usize,
+        /// Row-major entries.
         data: Vec<ComplexInput>,
     },
 }
 
+/// API angle mode payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ApiAngleMode {
@@ -26,6 +39,7 @@ pub enum ApiAngleMode {
     Rad,
 }
 
+/// API display mode payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ApiDisplayMode {
@@ -34,43 +48,66 @@ pub enum ApiDisplayMode {
     Eng,
 }
 
+/// Snapshot of full calculator state returned to the UI.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiState {
+    /// Bottom-to-top stack values.
     pub stack: Vec<ApiValue>,
+    /// Current scalar entry buffer text.
     pub entry_buffer: String,
+    /// Active angle mode.
     pub angle_mode: ApiAngleMode,
+    /// Active display mode.
     pub display_mode: ApiDisplayMode,
+    /// Decimal precision.
     pub precision: u8,
+    /// Memory registers.
     pub memory: Vec<Option<ApiValue>>,
 }
 
+/// Structured error payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ApiError {
+    /// Machine-readable error code.
     pub code: String,
+    /// Human-readable message.
     pub message: String,
 }
 
+/// Standard response envelope for API operations.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiResponse {
+    /// Whether the command succeeded.
     pub ok: bool,
+    /// Updated calculator state.
     pub state: ApiState,
+    /// Error details when `ok` is false.
     pub error: Option<ApiError>,
+    /// Optional non-fatal warning.
     pub warning: Option<String>,
 }
 
+/// Matrix input payload accepted by `push_matrix`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MatrixInput {
+    /// Number of rows.
     pub rows: usize,
+    /// Number of columns.
     pub cols: usize,
+    /// Row-major matrix entries.
     pub data: Vec<ComplexInput>,
 }
 
+/// Complex input payload shared by scalar and matrix APIs.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ComplexInput {
+    /// Real component.
     pub re: f64,
+    /// Imaginary component.
     pub im: f64,
 }
 
+/// High-level API wrapper over [`Calculator`] for command-style consumption.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CalculatorApi {
     calculator: Calculator,
@@ -83,36 +120,43 @@ impl Default for CalculatorApi {
 }
 
 impl CalculatorApi {
+    /// Constructs a new instance.
     pub fn new() -> Self {
         Self {
             calculator: Calculator::new(),
         }
     }
 
+    /// Returns a serializable snapshot of the current state.
     pub fn snapshot(&self) -> ApiState {
         to_api_state(self.calculator.state())
     }
 
+    /// Executes the `entry_set` operation.
     pub fn entry_set(&mut self, value: &str) -> ApiResponse {
         self.calculator.entry_set(value);
         self.success()
     }
 
+    /// Executes the `clear_entry` operation.
     pub fn clear_entry(&mut self) -> ApiResponse {
         self.calculator.clear_entry();
         self.success()
     }
 
+    /// Executes the `clear_all` operation.
     pub fn clear_all(&mut self) -> ApiResponse {
         self.calculator.clear_all();
         self.success()
     }
 
+    /// Executes the `push_real` operation.
     pub fn push_real(&mut self, value: f64) -> ApiResponse {
         self.calculator.push_value(Value::Real(value));
         self.success()
     }
 
+    /// Executes the `push_complex` operation.
     pub fn push_complex(&mut self, complex: ComplexInput) -> ApiResponse {
         self.calculator.push_value(Value::Complex(Complex {
             re: complex.re,
@@ -121,6 +165,7 @@ impl CalculatorApi {
         self.success()
     }
 
+    /// Executes the `push_matrix` operation.
     pub fn push_matrix(&mut self, matrix: MatrixInput) -> ApiResponse {
         let data = matrix
             .data
@@ -144,6 +189,7 @@ impl CalculatorApi {
         }
     }
 
+    /// Executes the `set_angle_mode` operation.
     pub fn set_angle_mode(&mut self, mode: ApiAngleMode) -> ApiResponse {
         let mode = match mode {
             ApiAngleMode::Deg => AngleMode::Deg,
@@ -153,356 +199,427 @@ impl CalculatorApi {
         self.success()
     }
 
+    /// Executes the `enter` operation.
     pub fn enter(&mut self) -> ApiResponse {
         let result = self.calculator.enter();
         self.wrap(result)
     }
 
+    /// Executes the `drop` operation.
     pub fn drop(&mut self) -> ApiResponse {
         let result = self.calculator.drop().map(|_| ());
         self.wrap(result)
     }
 
+    /// Executes the `dup` operation.
     pub fn dup(&mut self) -> ApiResponse {
         let result = self.calculator.dup();
         self.wrap(result)
     }
 
+    /// Executes the `swap` operation.
     pub fn swap(&mut self) -> ApiResponse {
         let result = self.calculator.swap();
         self.wrap(result)
     }
 
+    /// Executes the `rot` operation.
     pub fn rot(&mut self) -> ApiResponse {
         let result = self.calculator.rot();
         self.wrap(result)
     }
 
+    /// Executes the `roll` operation.
     pub fn roll(&mut self, count: usize) -> ApiResponse {
         let result = self.calculator.roll(count);
         self.wrap(result)
     }
 
+    /// Executes the `pick` operation.
     pub fn pick(&mut self, depth: usize) -> ApiResponse {
         let result = self.calculator.pick(depth);
         self.wrap(result)
     }
 
+    /// Executes the `pick_from_stack_index` operation.
     pub fn pick_from_stack_index(&mut self) -> ApiResponse {
         let result = self.calculator.pick_from_stack_index();
         self.wrap(result)
     }
 
+    /// Executes the `pow` operation.
     pub fn pow(&mut self) -> ApiResponse {
         let result = self.calculator.pow();
         self.wrap(result)
     }
 
+    /// Executes the `percent` operation.
     pub fn percent(&mut self) -> ApiResponse {
         let result = self.calculator.percent();
         self.wrap(result)
     }
 
+    /// Executes the `inv` operation.
     pub fn inv(&mut self) -> ApiResponse {
         let result = self.calculator.inv();
         self.wrap(result)
     }
 
+    /// Executes the `square` operation.
     pub fn square(&mut self) -> ApiResponse {
         let result = self.calculator.square();
         self.wrap(result)
     }
 
+    /// Executes the `root` operation.
     pub fn root(&mut self) -> ApiResponse {
         let result = self.calculator.root();
         self.wrap(result)
     }
 
+    /// Executes the `add` operation.
     pub fn add(&mut self) -> ApiResponse {
         let result = self.calculator.add();
         self.wrap(result)
     }
 
+    /// Executes the `sub` operation.
     pub fn sub(&mut self) -> ApiResponse {
         let result = self.calculator.sub();
         self.wrap(result)
     }
 
+    /// Executes the `mul` operation.
     pub fn mul(&mut self) -> ApiResponse {
         let result = self.calculator.mul();
         self.wrap(result)
     }
 
+    /// Executes the `div` operation.
     pub fn div(&mut self) -> ApiResponse {
         let result = self.calculator.div();
         self.wrap(result)
     }
 
+    /// Executes the `hadamard_mul` operation.
     pub fn hadamard_mul(&mut self) -> ApiResponse {
         let result = self.calculator.hadamard_mul();
         self.wrap(result)
     }
 
+    /// Executes the `hadamard_div` operation.
     pub fn hadamard_div(&mut self) -> ApiResponse {
         let result = self.calculator.hadamard_div();
         self.wrap(result)
     }
 
+    /// Executes the `sqrt` operation.
     pub fn sqrt(&mut self) -> ApiResponse {
         let result = self.calculator.sqrt();
         self.wrap(result)
     }
 
+    /// Executes the `ln` operation.
     pub fn ln(&mut self) -> ApiResponse {
         let result = self.calculator.ln();
         self.wrap(result)
     }
 
+    /// Executes the `sin` operation.
     pub fn sin(&mut self) -> ApiResponse {
         let result = self.calculator.sin();
         self.wrap(result)
     }
 
+    /// Executes the `cos` operation.
     pub fn cos(&mut self) -> ApiResponse {
         let result = self.calculator.cos();
         self.wrap(result)
     }
 
+    /// Executes the `tan` operation.
     pub fn tan(&mut self) -> ApiResponse {
         let result = self.calculator.tan();
         self.wrap(result)
     }
 
+    /// Executes the `asin` operation.
     pub fn asin(&mut self) -> ApiResponse {
         let result = self.calculator.asin();
         self.wrap(result)
     }
 
+    /// Executes the `acos` operation.
     pub fn acos(&mut self) -> ApiResponse {
         let result = self.calculator.acos();
         self.wrap(result)
     }
 
+    /// Executes the `atan` operation.
     pub fn atan(&mut self) -> ApiResponse {
         let result = self.calculator.atan();
         self.wrap(result)
     }
 
+    /// Executes the `sinh` operation.
     pub fn sinh(&mut self) -> ApiResponse {
         let result = self.calculator.sinh();
         self.wrap(result)
     }
 
+    /// Executes the `cosh` operation.
     pub fn cosh(&mut self) -> ApiResponse {
         let result = self.calculator.cosh();
         self.wrap(result)
     }
 
+    /// Executes the `tanh` operation.
     pub fn tanh(&mut self) -> ApiResponse {
         let result = self.calculator.tanh();
         self.wrap(result)
     }
 
+    /// Executes the `asinh` operation.
     pub fn asinh(&mut self) -> ApiResponse {
         let result = self.calculator.asinh();
         self.wrap(result)
     }
 
+    /// Executes the `acosh` operation.
     pub fn acosh(&mut self) -> ApiResponse {
         let result = self.calculator.acosh();
         self.wrap(result)
     }
 
+    /// Executes the `atanh` operation.
     pub fn atanh(&mut self) -> ApiResponse {
         let result = self.calculator.atanh();
         self.wrap(result)
     }
 
+    /// Executes the `exp` operation.
     pub fn exp(&mut self) -> ApiResponse {
         let result = self.calculator.exp();
         self.wrap(result)
     }
 
+    /// Executes the `exp10` operation.
     pub fn exp10(&mut self) -> ApiResponse {
         let result = self.calculator.exp10();
         self.wrap(result)
     }
 
+    /// Executes the `exp2` operation.
     pub fn exp2(&mut self) -> ApiResponse {
         let result = self.calculator.exp2();
         self.wrap(result)
     }
 
+    /// Executes the `log10` operation.
     pub fn log10(&mut self) -> ApiResponse {
         let result = self.calculator.log10();
         self.wrap(result)
     }
 
+    /// Executes the `log2` operation.
     pub fn log2(&mut self) -> ApiResponse {
         let result = self.calculator.log2();
         self.wrap(result)
     }
 
+    /// Executes the `gamma` operation.
     pub fn gamma(&mut self) -> ApiResponse {
         let result = self.calculator.gamma();
         self.wrap(result)
     }
 
+    /// Executes the `erf` operation.
     pub fn erf(&mut self) -> ApiResponse {
         let result = self.calculator.erf();
         self.wrap(result)
     }
 
+    /// Executes the `signum` operation.
     pub fn signum(&mut self) -> ApiResponse {
         let result = self.calculator.signum();
         self.wrap(result)
     }
 
+    /// Executes the `abs` operation.
     pub fn abs(&mut self) -> ApiResponse {
         let result = self.calculator.abs();
         self.wrap(result)
     }
 
+    /// Executes the `abs_sq` operation.
     pub fn abs_sq(&mut self) -> ApiResponse {
         let result = self.calculator.abs_sq();
         self.wrap(result)
     }
 
+    /// Executes the `arg` operation.
     pub fn arg(&mut self) -> ApiResponse {
         let result = self.calculator.arg();
         self.wrap(result)
     }
 
+    /// Executes the `conjugate` operation.
     pub fn conjugate(&mut self) -> ApiResponse {
         let result = self.calculator.conjugate();
         self.wrap(result)
     }
 
+    /// Executes the `real_part` operation.
     pub fn real_part(&mut self) -> ApiResponse {
         let result = self.calculator.real_part();
         self.wrap(result)
     }
 
+    /// Executes the `imag_part` operation.
     pub fn imag_part(&mut self) -> ApiResponse {
         let result = self.calculator.imag_part();
         self.wrap(result)
     }
 
+    /// Executes the `cart` operation.
     pub fn cart(&mut self) -> ApiResponse {
         let result = self.calculator.cart();
         self.wrap(result)
     }
 
+    /// Executes the `pol` operation.
     pub fn pol(&mut self) -> ApiResponse {
         let result = self.calculator.pol();
         self.wrap(result)
     }
 
+    /// Executes the `npol` operation.
     pub fn npol(&mut self) -> ApiResponse {
         let result = self.calculator.npol();
         self.wrap(result)
     }
 
+    /// Executes the `atan2` operation.
     pub fn atan2(&mut self) -> ApiResponse {
         let result = self.calculator.atan2();
         self.wrap(result)
     }
 
+    /// Executes the `to_rad` operation.
     pub fn to_rad(&mut self) -> ApiResponse {
         let result = self.calculator.to_rad();
         self.wrap(result)
     }
 
+    /// Executes the `to_deg` operation.
     pub fn to_deg(&mut self) -> ApiResponse {
         let result = self.calculator.to_deg();
         self.wrap(result)
     }
 
+    /// Executes the `factorial` operation.
     pub fn factorial(&mut self) -> ApiResponse {
         let result = self.calculator.factorial();
         self.wrap(result)
     }
 
+    /// Executes the `ncr` operation.
     pub fn ncr(&mut self) -> ApiResponse {
         let result = self.calculator.ncr();
         self.wrap(result)
     }
 
+    /// Executes the `npr` operation.
     pub fn npr(&mut self) -> ApiResponse {
         let result = self.calculator.npr();
         self.wrap(result)
     }
 
+    /// Executes the `modulo` operation.
     pub fn modulo(&mut self) -> ApiResponse {
         let result = self.calculator.modulo();
         self.wrap(result)
     }
 
+    /// Executes the `rand_num` operation.
     pub fn rand_num(&mut self) -> ApiResponse {
         let result = self.calculator.rand_num();
         self.wrap(result)
     }
 
+    /// Executes the `gcd` operation.
     pub fn gcd(&mut self) -> ApiResponse {
         let result = self.calculator.gcd();
         self.wrap(result)
     }
 
+    /// Executes the `lcm` operation.
     pub fn lcm(&mut self) -> ApiResponse {
         let result = self.calculator.lcm();
         self.wrap(result)
     }
 
+    /// Executes the `round_value` operation.
     pub fn round_value(&mut self) -> ApiResponse {
         let result = self.calculator.round_value();
         self.wrap(result)
     }
 
+    /// Executes the `floor_value` operation.
     pub fn floor_value(&mut self) -> ApiResponse {
         let result = self.calculator.floor_value();
         self.wrap(result)
     }
 
+    /// Executes the `ceil_value` operation.
     pub fn ceil_value(&mut self) -> ApiResponse {
         let result = self.calculator.ceil_value();
         self.wrap(result)
     }
 
+    /// Executes the `dec_part` operation.
     pub fn dec_part(&mut self) -> ApiResponse {
         let result = self.calculator.dec_part();
         self.wrap(result)
     }
 
+    /// Executes the `push_pi` operation.
     pub fn push_pi(&mut self) -> ApiResponse {
         self.calculator.push_pi();
         self.success()
     }
 
+    /// Executes the `push_e` operation.
     pub fn push_e(&mut self) -> ApiResponse {
         self.calculator.push_e();
         self.success()
     }
 
+    /// Executes the `determinant` operation.
     pub fn determinant(&mut self) -> ApiResponse {
         let result = self.calculator.determinant();
         self.wrap(result)
     }
 
+    /// Executes the `inverse` operation.
     pub fn inverse(&mut self) -> ApiResponse {
         let result = self.calculator.inverse();
         self.wrap(result)
     }
 
+    /// Executes the `transpose` operation.
     pub fn transpose(&mut self) -> ApiResponse {
         let result = self.calculator.transpose();
         self.wrap(result)
     }
 
+    /// Executes the `solve_ax_b` operation.
     pub fn solve_ax_b(&mut self) -> ApiResponse {
         let result = self.calculator.solve_ax_b();
         self.wrap(result)
     }
 
+    /// Executes the `solve_lstsq` operation.
     pub fn solve_lstsq(&mut self) -> ApiResponse {
         match self.calculator.solve_lstsq() {
             Ok(warning) => self.success_with_warning(warning),
@@ -515,66 +632,79 @@ impl CalculatorApi {
         }
     }
 
+    /// Executes the `dot` operation.
     pub fn dot(&mut self) -> ApiResponse {
         let result = self.calculator.dot();
         self.wrap(result)
     }
 
+    /// Executes the `cross` operation.
     pub fn cross(&mut self) -> ApiResponse {
         let result = self.calculator.cross();
         self.wrap(result)
     }
 
+    /// Executes the `trace` operation.
     pub fn trace(&mut self) -> ApiResponse {
         let result = self.calculator.trace();
         self.wrap(result)
     }
 
+    /// Executes the `norm_p` operation.
     pub fn norm_p(&mut self) -> ApiResponse {
         let result = self.calculator.norm_p();
         self.wrap(result)
     }
 
+    /// Executes the `diag` operation.
     pub fn diag(&mut self) -> ApiResponse {
         let result = self.calculator.diag();
         self.wrap(result)
     }
 
+    /// Executes the `toep` operation.
     pub fn toep(&mut self) -> ApiResponse {
         let result = self.calculator.toep();
         self.wrap(result)
     }
 
+    /// Executes the `mat_exp` operation.
     pub fn mat_exp(&mut self) -> ApiResponse {
         let result = self.calculator.mat_exp();
         self.wrap(result)
     }
 
+    /// Executes the `hermitian` operation.
     pub fn hermitian(&mut self) -> ApiResponse {
         let result = self.calculator.hermitian();
         self.wrap(result)
     }
 
+    /// Executes the `mat_pow` operation.
     pub fn mat_pow(&mut self) -> ApiResponse {
         let result = self.calculator.mat_pow();
         self.wrap(result)
     }
 
+    /// Executes the `qr` operation.
     pub fn qr(&mut self) -> ApiResponse {
         let result = self.calculator.qr();
         self.wrap(result)
     }
 
+    /// Executes the `lu` operation.
     pub fn lu(&mut self) -> ApiResponse {
         let result = self.calculator.lu();
         self.wrap(result)
     }
 
+    /// Executes the `svd` operation.
     pub fn svd(&mut self) -> ApiResponse {
         let result = self.calculator.svd();
         self.wrap(result)
     }
 
+    /// Executes the `evd` operation.
     pub fn evd(&mut self) -> ApiResponse {
         match self.calculator.evd() {
             Ok(warning) => self.success_with_warning(warning),
@@ -587,81 +717,97 @@ impl CalculatorApi {
         }
     }
 
+    /// Executes the `mean` operation.
     pub fn mean(&mut self) -> ApiResponse {
         let result = self.calculator.mean();
         self.wrap(result)
     }
 
+    /// Executes the `mode` operation.
     pub fn mode(&mut self) -> ApiResponse {
         let result = self.calculator.mode();
         self.wrap(result)
     }
 
+    /// Executes the `variance` operation.
     pub fn variance(&mut self) -> ApiResponse {
         let result = self.calculator.variance();
         self.wrap(result)
     }
 
+    /// Executes the `std_dev` operation.
     pub fn std_dev(&mut self) -> ApiResponse {
         let result = self.calculator.std_dev();
         self.wrap(result)
     }
 
+    /// Executes the `max_value` operation.
     pub fn max_value(&mut self) -> ApiResponse {
         let result = self.calculator.max_value();
         self.wrap(result)
     }
 
+    /// Executes the `min_value` operation.
     pub fn min_value(&mut self) -> ApiResponse {
         let result = self.calculator.min_value();
         self.wrap(result)
     }
 
+    /// Executes the `push_identity` operation.
     pub fn push_identity(&mut self, size: usize) -> ApiResponse {
         let result = self.calculator.push_identity(size);
         self.wrap(result)
     }
 
+    /// Executes the `stack_vec` operation.
     pub fn stack_vec(&mut self) -> ApiResponse {
         let result = self.calculator.stack_vec();
         self.wrap(result)
     }
 
+    /// Executes the `hstack` operation.
     pub fn hstack(&mut self) -> ApiResponse {
         let result = self.calculator.hstack();
         self.wrap(result)
     }
 
+    /// Executes the `vstack` operation.
     pub fn vstack(&mut self) -> ApiResponse {
         let result = self.calculator.vstack();
         self.wrap(result)
     }
 
+    /// Executes the `ravel` operation.
     pub fn ravel(&mut self) -> ApiResponse {
         let result = self.calculator.ravel();
         self.wrap(result)
     }
 
+    /// Executes the `hravel` operation.
     pub fn hravel(&mut self) -> ApiResponse {
         let result = self.calculator.hravel();
         self.wrap(result)
     }
 
+    /// Executes the `vravel` operation.
     pub fn vravel(&mut self) -> ApiResponse {
         let result = self.calculator.vravel();
         self.wrap(result)
     }
 
+    /// Executes the `memory_store` operation.
     pub fn memory_store(&mut self, register: usize) -> ApiResponse {
         let result = self.calculator.memory_store(register);
         self.wrap(result)
     }
 
+    /// Executes the `memory_recall` operation.
     pub fn memory_recall(&mut self, register: usize) -> ApiResponse {
         let result = self.calculator.memory_recall(register);
         self.wrap(result)
     }
 
+    /// Executes the `memory_clear` operation.
     pub fn memory_clear(&mut self, register: usize) -> ApiResponse {
         let result = self.calculator.memory_clear(register);
         self.wrap(result)
@@ -797,361 +943,437 @@ mod wasm {
     #[wasm_bindgen]
     impl WasmCalculator {
         #[wasm_bindgen(constructor)]
+        /// Constructs a new instance.
         pub fn new() -> Self {
             Self {
                 inner: CalculatorApi::new(),
             }
         }
 
+        /// Executes the `snapshot_json` operation.
         pub fn snapshot_json(&self) -> String {
             serde_json::to_string(&self.inner.snapshot())
                 .expect("state serialization should succeed")
         }
 
+        /// Executes the `entry_set` operation.
         pub fn entry_set(&mut self, value: &str) -> String {
             serde_json::to_string(&self.inner.entry_set(value))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `enter` operation.
         pub fn enter(&mut self) -> String {
             serde_json::to_string(&self.inner.enter())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `add` operation.
         pub fn add(&mut self) -> String {
             serde_json::to_string(&self.inner.add()).expect("response serialization should succeed")
         }
 
+        /// Executes the `pow` operation.
         pub fn pow(&mut self) -> String {
             serde_json::to_string(&self.inner.pow()).expect("response serialization should succeed")
         }
 
+        /// Executes the `percent` operation.
         pub fn percent(&mut self) -> String {
             serde_json::to_string(&self.inner.percent())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `inv` operation.
         pub fn inv(&mut self) -> String {
             serde_json::to_string(&self.inner.inv()).expect("response serialization should succeed")
         }
 
+        /// Executes the `square` operation.
         pub fn square(&mut self) -> String {
             serde_json::to_string(&self.inner.square())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `root` operation.
         pub fn root(&mut self) -> String {
             serde_json::to_string(&self.inner.root())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `drop` operation.
         pub fn drop(&mut self) -> String {
             serde_json::to_string(&self.inner.drop())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `dup` operation.
         pub fn dup(&mut self) -> String {
             serde_json::to_string(&self.inner.dup()).expect("response serialization should succeed")
         }
 
+        /// Executes the `swap` operation.
         pub fn swap(&mut self) -> String {
             serde_json::to_string(&self.inner.swap())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `rot` operation.
         pub fn rot(&mut self) -> String {
             serde_json::to_string(&self.inner.rot()).expect("response serialization should succeed")
         }
 
+        /// Executes the `roll` operation.
         pub fn roll(&mut self, count: usize) -> String {
             serde_json::to_string(&self.inner.roll(count))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `pick` operation.
         pub fn pick(&mut self, depth: usize) -> String {
             serde_json::to_string(&self.inner.pick(depth))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `pick_from_stack_index` operation.
         pub fn pick_from_stack_index(&mut self) -> String {
             serde_json::to_string(&self.inner.pick_from_stack_index())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `sub` operation.
         pub fn sub(&mut self) -> String {
             serde_json::to_string(&self.inner.sub()).expect("response serialization should succeed")
         }
 
+        /// Executes the `mul` operation.
         pub fn mul(&mut self) -> String {
             serde_json::to_string(&self.inner.mul()).expect("response serialization should succeed")
         }
 
+        /// Executes the `div` operation.
         pub fn div(&mut self) -> String {
             serde_json::to_string(&self.inner.div()).expect("response serialization should succeed")
         }
 
+        /// Executes the `hadamard_mul` operation.
         pub fn hadamard_mul(&mut self) -> String {
             serde_json::to_string(&self.inner.hadamard_mul())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `hadamard_div` operation.
         pub fn hadamard_div(&mut self) -> String {
             serde_json::to_string(&self.inner.hadamard_div())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `sqrt` operation.
         pub fn sqrt(&mut self) -> String {
             serde_json::to_string(&self.inner.sqrt())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `ln` operation.
         pub fn ln(&mut self) -> String {
             serde_json::to_string(&self.inner.ln()).expect("response serialization should succeed")
         }
 
+        /// Executes the `sin` operation.
         pub fn sin(&mut self) -> String {
             serde_json::to_string(&self.inner.sin()).expect("response serialization should succeed")
         }
 
+        /// Executes the `cos` operation.
         pub fn cos(&mut self) -> String {
             serde_json::to_string(&self.inner.cos()).expect("response serialization should succeed")
         }
 
+        /// Executes the `tan` operation.
         pub fn tan(&mut self) -> String {
             serde_json::to_string(&self.inner.tan()).expect("response serialization should succeed")
         }
 
+        /// Executes the `asin` operation.
         pub fn asin(&mut self) -> String {
             serde_json::to_string(&self.inner.asin())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `acos` operation.
         pub fn acos(&mut self) -> String {
             serde_json::to_string(&self.inner.acos())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `atan` operation.
         pub fn atan(&mut self) -> String {
             serde_json::to_string(&self.inner.atan())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `sinh` operation.
         pub fn sinh(&mut self) -> String {
             serde_json::to_string(&self.inner.sinh())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `cosh` operation.
         pub fn cosh(&mut self) -> String {
             serde_json::to_string(&self.inner.cosh())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `tanh` operation.
         pub fn tanh(&mut self) -> String {
             serde_json::to_string(&self.inner.tanh())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `asinh` operation.
         pub fn asinh(&mut self) -> String {
             serde_json::to_string(&self.inner.asinh())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `acosh` operation.
         pub fn acosh(&mut self) -> String {
             serde_json::to_string(&self.inner.acosh())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `atanh` operation.
         pub fn atanh(&mut self) -> String {
             serde_json::to_string(&self.inner.atanh())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `exp` operation.
         pub fn exp(&mut self) -> String {
             serde_json::to_string(&self.inner.exp()).expect("response serialization should succeed")
         }
 
+        /// Executes the `exp10` operation.
         pub fn exp10(&mut self) -> String {
             serde_json::to_string(&self.inner.exp10())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `exp2` operation.
         pub fn exp2(&mut self) -> String {
             serde_json::to_string(&self.inner.exp2())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `log10` operation.
         pub fn log10(&mut self) -> String {
             serde_json::to_string(&self.inner.log10())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `log2` operation.
         pub fn log2(&mut self) -> String {
             serde_json::to_string(&self.inner.log2())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `gamma` operation.
         pub fn gamma(&mut self) -> String {
             serde_json::to_string(&self.inner.gamma())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `erf` operation.
         pub fn erf(&mut self) -> String {
             serde_json::to_string(&self.inner.erf()).expect("response serialization should succeed")
         }
 
+        /// Executes the `signum` operation.
         pub fn signum(&mut self) -> String {
             serde_json::to_string(&self.inner.signum())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `abs` operation.
         pub fn abs(&mut self) -> String {
             serde_json::to_string(&self.inner.abs()).expect("response serialization should succeed")
         }
 
+        /// Executes the `abs_sq` operation.
         pub fn abs_sq(&mut self) -> String {
             serde_json::to_string(&self.inner.abs_sq())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `arg` operation.
         pub fn arg(&mut self) -> String {
             serde_json::to_string(&self.inner.arg()).expect("response serialization should succeed")
         }
 
+        /// Executes the `conjugate` operation.
         pub fn conjugate(&mut self) -> String {
             serde_json::to_string(&self.inner.conjugate())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `real_part` operation.
         pub fn real_part(&mut self) -> String {
             serde_json::to_string(&self.inner.real_part())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `imag_part` operation.
         pub fn imag_part(&mut self) -> String {
             serde_json::to_string(&self.inner.imag_part())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `cart` operation.
         pub fn cart(&mut self) -> String {
             serde_json::to_string(&self.inner.cart())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `pol` operation.
         pub fn pol(&mut self) -> String {
             serde_json::to_string(&self.inner.pol()).expect("response serialization should succeed")
         }
 
+        /// Executes the `npol` operation.
         pub fn npol(&mut self) -> String {
             serde_json::to_string(&self.inner.npol())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `atan2` operation.
         pub fn atan2(&mut self) -> String {
             serde_json::to_string(&self.inner.atan2())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `to_rad` operation.
         pub fn to_rad(&mut self) -> String {
             serde_json::to_string(&self.inner.to_rad())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `to_deg` operation.
         pub fn to_deg(&mut self) -> String {
             serde_json::to_string(&self.inner.to_deg())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `factorial` operation.
         pub fn factorial(&mut self) -> String {
             serde_json::to_string(&self.inner.factorial())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `ncr` operation.
         pub fn ncr(&mut self) -> String {
             serde_json::to_string(&self.inner.ncr()).expect("response serialization should succeed")
         }
 
+        /// Executes the `npr` operation.
         pub fn npr(&mut self) -> String {
             serde_json::to_string(&self.inner.npr()).expect("response serialization should succeed")
         }
 
+        /// Executes the `modulo` operation.
         pub fn modulo(&mut self) -> String {
             serde_json::to_string(&self.inner.modulo())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `rand_num` operation.
         pub fn rand_num(&mut self) -> String {
             serde_json::to_string(&self.inner.rand_num())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `gcd` operation.
         pub fn gcd(&mut self) -> String {
             serde_json::to_string(&self.inner.gcd()).expect("response serialization should succeed")
         }
 
+        /// Executes the `lcm` operation.
         pub fn lcm(&mut self) -> String {
             serde_json::to_string(&self.inner.lcm()).expect("response serialization should succeed")
         }
 
+        /// Executes the `round_value` operation.
         pub fn round_value(&mut self) -> String {
             serde_json::to_string(&self.inner.round_value())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `floor_value` operation.
         pub fn floor_value(&mut self) -> String {
             serde_json::to_string(&self.inner.floor_value())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `ceil_value` operation.
         pub fn ceil_value(&mut self) -> String {
             serde_json::to_string(&self.inner.ceil_value())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `dec_part` operation.
         pub fn dec_part(&mut self) -> String {
             serde_json::to_string(&self.inner.dec_part())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `push_pi` operation.
         pub fn push_pi(&mut self) -> String {
             serde_json::to_string(&self.inner.push_pi())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `push_e` operation.
         pub fn push_e(&mut self) -> String {
             serde_json::to_string(&self.inner.push_e())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `set_angle_mode_deg` operation.
         pub fn set_angle_mode_deg(&mut self) -> String {
             serde_json::to_string(&self.inner.set_angle_mode(ApiAngleMode::Deg))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `set_angle_mode_rad` operation.
         pub fn set_angle_mode_rad(&mut self) -> String {
             serde_json::to_string(&self.inner.set_angle_mode(ApiAngleMode::Rad))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `clear_entry` operation.
         pub fn clear_entry(&mut self) -> String {
             serde_json::to_string(&self.inner.clear_entry())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `clear_all` operation.
         pub fn clear_all(&mut self) -> String {
             serde_json::to_string(&self.inner.clear_all())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `push_real` operation.
         pub fn push_real(&mut self, value: f64) -> String {
             serde_json::to_string(&self.inner.push_real(value))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `push_complex` operation.
         pub fn push_complex(&mut self, re: f64, im: f64) -> String {
             serde_json::to_string(&self.inner.push_complex(ComplexInput { re, im }))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `push_matrix_json` operation.
         pub fn push_matrix_json(&mut self, matrix_json: &str) -> String {
             let parsed: Result<MatrixInput, _> = serde_json::from_str(matrix_json);
             match parsed {
@@ -1170,166 +1392,200 @@ mod wasm {
             }
         }
 
+        /// Executes the `determinant` operation.
         pub fn determinant(&mut self) -> String {
             serde_json::to_string(&self.inner.determinant())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `inverse` operation.
         pub fn inverse(&mut self) -> String {
             serde_json::to_string(&self.inner.inverse())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `transpose` operation.
         pub fn transpose(&mut self) -> String {
             serde_json::to_string(&self.inner.transpose())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `solve_ax_b` operation.
         pub fn solve_ax_b(&mut self) -> String {
             serde_json::to_string(&self.inner.solve_ax_b())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `solve_lstsq` operation.
         pub fn solve_lstsq(&mut self) -> String {
             serde_json::to_string(&self.inner.solve_lstsq())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `dot` operation.
         pub fn dot(&mut self) -> String {
             serde_json::to_string(&self.inner.dot()).expect("response serialization should succeed")
         }
 
+        /// Executes the `cross` operation.
         pub fn cross(&mut self) -> String {
             serde_json::to_string(&self.inner.cross())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `trace` operation.
         pub fn trace(&mut self) -> String {
             serde_json::to_string(&self.inner.trace())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `norm_p` operation.
         pub fn norm_p(&mut self) -> String {
             serde_json::to_string(&self.inner.norm_p())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `diag` operation.
         pub fn diag(&mut self) -> String {
             serde_json::to_string(&self.inner.diag())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `toep` operation.
         pub fn toep(&mut self) -> String {
             serde_json::to_string(&self.inner.toep())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `mat_exp` operation.
         pub fn mat_exp(&mut self) -> String {
             serde_json::to_string(&self.inner.mat_exp())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `hermitian` operation.
         pub fn hermitian(&mut self) -> String {
             serde_json::to_string(&self.inner.hermitian())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `mat_pow` operation.
         pub fn mat_pow(&mut self) -> String {
             serde_json::to_string(&self.inner.mat_pow())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `qr` operation.
         pub fn qr(&mut self) -> String {
             serde_json::to_string(&self.inner.qr()).expect("response serialization should succeed")
         }
 
+        /// Executes the `lu` operation.
         pub fn lu(&mut self) -> String {
             serde_json::to_string(&self.inner.lu()).expect("response serialization should succeed")
         }
 
+        /// Executes the `svd` operation.
         pub fn svd(&mut self) -> String {
             serde_json::to_string(&self.inner.svd()).expect("response serialization should succeed")
         }
 
+        /// Executes the `evd` operation.
         pub fn evd(&mut self) -> String {
             serde_json::to_string(&self.inner.evd()).expect("response serialization should succeed")
         }
 
+        /// Executes the `mean` operation.
         pub fn mean(&mut self) -> String {
             serde_json::to_string(&self.inner.mean())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `mode` operation.
         pub fn mode(&mut self) -> String {
             serde_json::to_string(&self.inner.mode())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `variance` operation.
         pub fn variance(&mut self) -> String {
             serde_json::to_string(&self.inner.variance())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `std_dev` operation.
         pub fn std_dev(&mut self) -> String {
             serde_json::to_string(&self.inner.std_dev())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `max_value` operation.
         pub fn max_value(&mut self) -> String {
             serde_json::to_string(&self.inner.max_value())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `min_value` operation.
         pub fn min_value(&mut self) -> String {
             serde_json::to_string(&self.inner.min_value())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `push_identity` operation.
         pub fn push_identity(&mut self, size: usize) -> String {
             serde_json::to_string(&self.inner.push_identity(size))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `stack_vec` operation.
         pub fn stack_vec(&mut self) -> String {
             serde_json::to_string(&self.inner.stack_vec())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `hstack` operation.
         pub fn hstack(&mut self) -> String {
             serde_json::to_string(&self.inner.hstack())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `vstack` operation.
         pub fn vstack(&mut self) -> String {
             serde_json::to_string(&self.inner.vstack())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `ravel` operation.
         pub fn ravel(&mut self) -> String {
             serde_json::to_string(&self.inner.ravel())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `hravel` operation.
         pub fn hravel(&mut self) -> String {
             serde_json::to_string(&self.inner.hravel())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `vravel` operation.
         pub fn vravel(&mut self) -> String {
             serde_json::to_string(&self.inner.vravel())
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `memory_store` operation.
         pub fn memory_store(&mut self, register: usize) -> String {
             serde_json::to_string(&self.inner.memory_store(register))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `memory_recall` operation.
         pub fn memory_recall(&mut self, register: usize) -> String {
             serde_json::to_string(&self.inner.memory_recall(register))
                 .expect("response serialization should succeed")
         }
 
+        /// Executes the `memory_clear` operation.
         pub fn memory_clear(&mut self, register: usize) -> String {
             serde_json::to_string(&self.inner.memory_clear(register))
                 .expect("response serialization should succeed")

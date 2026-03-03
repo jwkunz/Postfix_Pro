@@ -1,3 +1,8 @@
+//! Calculator engine host and internal helpers.
+//!
+//! Public operation methods are split into panel-aligned modules under
+//! `src/calculator_ops/`, while this file keeps shared helpers and matrix math.
+
 use nalgebra::linalg::Schur;
 use nalgebra::{DMatrix, DVector, Vector3};
 use num_complex::Complex64;
@@ -26,6 +31,8 @@ mod memory_panel;
 mod matrix_panel;
 #[path = "calculator_ops/statistics_panel.rs"]
 mod statistics_panel;
+
+/// Stateful RPN calculator engine.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Calculator {
     state: CalcState,
@@ -38,6 +45,7 @@ impl Default for Calculator {
 }
 
 impl Calculator {
+    /// Constructs a new instance.
     pub fn new() -> Self {
         Self {
             state: CalcState {
@@ -52,9 +60,11 @@ impl Calculator {
         }
     }
 
+    /// Returns an immutable view of the current calculator state.
     pub fn state(&self) -> &CalcState {
         &self.state
     }
+
     fn apply_stat_op(
         &mut self,
         op: fn(&Matrix) -> Result<f64, CalcError>,
@@ -1553,4 +1563,3 @@ impl Calculator {
         Ok(())
     }
 }
-

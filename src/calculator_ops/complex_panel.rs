@@ -1,6 +1,9 @@
+//! Calculator operations for the complex panel panel.
+
 use super::*;
 
 impl Calculator {
+    /// Executes the `abs` operation.
     pub fn abs(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.abs())),
@@ -16,6 +19,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `abs_sq` operation.
     pub fn abs_sq(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v * v)),
@@ -31,6 +35,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `arg` operation.
     pub fn arg(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_unary_op(|value| match value {
@@ -63,6 +68,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `conjugate` operation.
     pub fn conjugate(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Complex(c) => Ok(Value::Complex(Complex {
@@ -74,6 +80,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `real_part` operation.
     pub fn real_part(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(*v)),
@@ -89,6 +96,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `imag_part` operation.
     pub fn imag_part(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(_) => Ok(Value::Real(0.0)),
@@ -104,18 +112,22 @@ impl Calculator {
         })
     }
 
+    /// Executes the `cart` operation.
     pub fn cart(&mut self) -> Result<(), CalcError> {
         self.complex_stack_transform(ComplexTransformMode::Cartesian)
     }
 
+    /// Executes the `pol` operation.
     pub fn pol(&mut self) -> Result<(), CalcError> {
         self.complex_stack_transform(ComplexTransformMode::Polar)
     }
 
+    /// Executes the `npol` operation.
     pub fn npol(&mut self) -> Result<(), CalcError> {
         self.complex_stack_transform(ComplexTransformMode::NormalizedPolar)
     }
 
+    /// Executes the `atan2` operation.
     pub fn atan2(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
         self.apply_binary_op(|left, right| {

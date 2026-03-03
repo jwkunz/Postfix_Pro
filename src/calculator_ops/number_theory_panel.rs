@@ -1,6 +1,9 @@
+//! Calculator operations for the number theory panel panel.
+
 use super::*;
 
 impl Calculator {
+    /// Executes the `factorial` operation.
     pub fn factorial(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => {
@@ -17,6 +20,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `ncr` operation.
     pub fn ncr(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Real(n), Value::Real(r)) => {
@@ -33,6 +37,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `npr` operation.
     pub fn npr(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Real(n), Value::Real(r)) => {
@@ -53,6 +58,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `modulo` operation.
     pub fn modulo(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Real(x), Value::Real(y)) => {
@@ -67,12 +73,14 @@ impl Calculator {
         })
     }
 
+    /// Executes the `rand_num` operation.
     pub fn rand_num(&mut self) -> Result<(), CalcError> {
         let next = self.next_random();
         self.state.stack.push(Value::Real(next));
         Ok(())
     }
 
+    /// Executes the `gcd` operation.
     pub fn gcd(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Real(a), Value::Real(b)) => {
@@ -87,6 +95,7 @@ impl Calculator {
         })
     }
 
+    /// Executes the `lcm` operation.
     pub fn lcm(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Real(a), Value::Real(b)) => {
