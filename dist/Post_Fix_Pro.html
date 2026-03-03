@@ -992,10 +992,12 @@
       const startIndex = Math.max(0, bottomFirst.length - visibleStackFrames);
       const visibleValues = bottomFirst.slice(startIndex);
       const hiddenCount = startIndex;
+      const leadingNullFrames = Math.max(0, visibleStackFrames - visibleValues.length);
       stackSummary.textContent = `showing ${visibleStackFrames} frames (${hiddenCount} hidden)`;
       for (let slot = 0; slot < visibleStackFrames; slot += 1) {
-        const value = visibleValues[slot];
-        const actualIdx = startIndex + slot;
+        const valueIdx = slot - leadingNullFrames;
+        const value = valueIdx >= 0 ? visibleValues[valueIdx] : null;
+        const actualIdx = value ? startIndex + valueIdx : -1;
         const li = document.createElement("li");
         if (value && actualIdx === bottomFirst.length - 1) {
           li.classList.add("top");
