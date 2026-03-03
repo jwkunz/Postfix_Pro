@@ -44,6 +44,7 @@ Stack labels:
   - set rows + columns
   - press `Apply` to regenerate matrix text with that size
 - `Solve A*x=B`: solve linear system using top two matrices
+- `LSTSQ Solve`: least-squares solve using Moore-Penrose pseudoinverse (`x = A^+ * B`, equivalent to normal-equation solution with pseudoinverse handling)
 - `det`: determinant of top matrix
 - `trace`: trace of top matrix
 - `transpose`: transpose top matrix

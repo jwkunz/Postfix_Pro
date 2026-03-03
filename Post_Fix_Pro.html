@@ -694,6 +694,7 @@
       <h3 class="panel-title">Matrix Operators</h3>
       <div class="matrix-actions" data-advanced-actions>
         <button class="op" id="solve-btn">Solve A*x=B</button>
+        <button class="op" id="solve-lstsq-btn">LSTSQ Solve</button>
         <button class="fn" data-action="det">det</button>
         <button class="fn" data-action="trace">trace</button>
         <button class="fn" data-action="transpose">transpose</button>
@@ -875,6 +876,7 @@
     const applyASizeBtn = document.getElementById("apply-a-size-btn");
     const pushABtn = document.getElementById("push-a-btn");
     const solveBtn = document.getElementById("solve-btn");
+    const solveLstsqBtn = document.getElementById("solve-lstsq-btn");
     const presetABtn = document.getElementById("preset-a-btn");
     const stackVecBtn = document.getElementById("stack-vec-btn");
     const importCsvBtn = document.getElementById("import-csv-btn");
@@ -1591,6 +1593,11 @@
         call("solve_ax_b");
         return;
       }
+      if (action === "solve-lstsq") {
+        if (!commitEntryIfNeeded()) return;
+        call("solve_lstsq");
+        return;
+      }
       if (action === "push-identity") {
         pushIdentityFromInput();
         return;
@@ -1757,6 +1764,11 @@
     solveBtn.addEventListener("click", () => {
       if (!wasmCalc) return;
       handleAction("solve");
+    });
+
+    solveLstsqBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      handleAction("solve-lstsq");
     });
 
     presetABtn.addEventListener("click", () => {

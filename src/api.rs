@@ -483,6 +483,11 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn solve_lstsq(&mut self) -> ApiResponse {
+        let result = self.calculator.solve_lstsq();
+        self.wrap(result)
+    }
+
     pub fn dot(&mut self) -> ApiResponse {
         let result = self.calculator.dot();
         self.wrap(result)
@@ -1119,6 +1124,11 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn solve_lstsq(&mut self) -> String {
+            serde_json::to_string(&self.inner.solve_lstsq())
+                .expect("response serialization should succeed")
+        }
+
         pub fn dot(&mut self) -> String {
             serde_json::to_string(&self.inner.dot()).expect("response serialization should succeed")
         }
@@ -1547,6 +1557,39 @@ mod tests {
             norm_response.state.stack,
             vec![ApiValue::Real { value: 5.0 }]
         );
+    }
+
+    #[test]
+    fn solve_lstsq_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 3,
+            cols: 2,
+            data: vec![
+                c(1.0, 0.0),
+                c(0.0, 0.0),
+                c(0.0, 0.0),
+                c(1.0, 0.0),
+                c(1.0, 0.0),
+                c(1.0, 0.0),
+            ],
+        });
+        api.push_matrix(MatrixInput {
+            rows: 3,
+            cols: 1,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0)],
+        });
+
+        let response = api.solve_lstsq();
+        assert!(response.ok);
+        match response.state.stack.as_slice() {
+            [ApiValue::Matrix { rows, cols, data }] => {
+                assert_eq!((*rows, *cols), (2, 1));
+                assert!((data[0].re - 1.0).abs() < 1e-10);
+                assert!((data[1].re - 2.0).abs() < 1e-10);
+            }
+            other => panic!("expected matrix response, got {other:?}"),
+        }
     }
 
     #[test]

@@ -1324,6 +1324,17 @@ impl Calculator {
         })
     }
 
+    pub fn solve_lstsq(&mut self) -> Result<(), CalcError> {
+        self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => {
+                Ok(Value::Matrix(Self::matrix_solve_lstsq(a, b)?))
+            }
+            _ => Err(CalcError::TypeMismatch(
+                "solve_lstsq requires two matrix operands (A then B)".to_string(),
+            )),
+        })
+    }
+
     pub fn dot(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
             (Value::Matrix(a), Value::Matrix(b)) => Ok(Value::Complex(Self::matrix_dot(a, b)?)),
@@ -2721,6 +2732,26 @@ impl Calculator {
         )
     }
 
+    fn matrix_solve_lstsq(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+        if a.rows != b.rows {
+            return Err(CalcError::DimensionMismatch {
+                expected: a.rows,
+                actual: b.rows,
+            });
+        }
+
+        let a_dm = Self::matrix_to_dmatrix(a);
+        let b_dm = Self::matrix_to_dmatrix(b);
+        let svd = a_dm.svd(true, true);
+        let pinv = svd.pseudo_inverse(1e-12).map_err(|_| {
+            CalcError::SingularMatrix(
+                "solve_lstsq failed: could not compute pseudoinverse".to_string(),
+            )
+        })?;
+        let x = pinv * b_dm;
+        Ok(Self::dmatrix_to_matrix(&x))
+    }
+
     fn require_same_shape(a: &Matrix, b: &Matrix, operation: &str) -> Result<(), CalcError> {
         if a.rows != b.rows || a.cols != b.cols {
             return Err(CalcError::TypeMismatch(format!(
@@ -3730,6 +3761,24 @@ mod tests {
             Some(Value::Matrix(actual)) => {
                 let expected = matrix(2, 1, &[0.0, 2.5]);
                 assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("unexpected stack value: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn solve_lstsq_with_overdetermined_rhs() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(3, 2, &[1.0, 0.0, 0.0, 1.0, 1.0, 1.0])));
+        calc.push_value(Value::Matrix(matrix(3, 1, &[1.0, 2.0, 3.0])));
+
+        let result = calc.solve_lstsq();
+
+        assert_eq!(result, Ok(()));
+        match calc.state().stack.last() {
+            Some(Value::Matrix(actual)) => {
+                let expected = matrix(2, 1, &[1.0, 2.0]);
+                assert_matrix_close(actual, &expected, 1e-10);
             }
             other => panic!("unexpected stack value: {other:?}"),
         }
