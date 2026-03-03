@@ -461,7 +461,7 @@
 
     .memory-row {
       display: grid;
-      grid-template-columns: 84px 1fr 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 8px;
     }
 
@@ -590,7 +590,7 @@
       }
 
       .memory-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -632,8 +632,8 @@
       <p class="keypad-guide">RPN flow: build number -> <code>Enter</code> -> apply operation.</p>
 
       <div class="keys" id="keypad">
-        <button class="fn" data-action="toggle-angle">set_angle_mode</button>
-        <button class="fn" data-action="pick-top-index">pick_from_stack_index</button>
+        <button class="fn" data-action="toggle-angle">DEG/RAD</button>
+        <button class="fn" data-action="pick-top-index">pick</button>
         <button class="danger" data-action="clear-entry">clear_entry</button>
         <button class="danger" data-action="clear-all">clear_all</button>
 
@@ -642,7 +642,7 @@
         <button class="fn" data-action="swap">swap</button>
         <button class="fn" data-action="rot">rot</button>
 
-        <button class="fn" data-action="toggle-sign">toggle_sign</button>
+        <button class="fn" data-action="toggle-sign">+-</button>
         <button class="op" data-action="div">div</button>
         <button class="op" data-action="mul">mul</button>
         <button class="op" data-action="sub">sub</button>
@@ -662,7 +662,7 @@
         <button data-digit="3">3</button>
         <button class="wide" data-digit="0">0</button>
         <button data-action="decimal">.</button>
-        <button class="fn" data-action="insert-exp">insert_exp</button>
+        <button class="fn" data-action="insert-exp">EXP</button>
       </div>
     </section>
 
@@ -830,22 +830,22 @@
     <section class="panel">
       <h3 class="panel-title">Constants</h3>
       <div class="science-actions" data-advanced-actions>
-        <button class="fn" data-action="pi">push_pi</button>
-        <button class="fn" data-action="e">push_e</button>
-        <button class="fn" data-action="const-euler-gamma">const_euler_gamma</button>
-        <button class="fn" data-action="const-psi">const_psi</button>
-        <button class="fn" data-action="const-c">const_c</button>
-        <button class="fn" data-action="const-mol">const_mol</button>
-        <button class="fn" data-action="const-k">const_k</button>
-        <button class="fn" data-action="const-hbar">const_hbar</button>
-        <button class="fn" data-action="const-epsilon0">const_epsilon0</button>
-        <button class="fn" data-action="const-mu0">const_mu0</button>
-        <button class="fn" data-action="const-G">const_g</button>
+        <button class="fn" data-action="pi">π</button>
+        <button class="fn" data-action="e">e</button>
+        <button class="fn" data-action="const-euler-gamma">γ</button>
+        <button class="fn" data-action="const-psi">ψ</button>
+        <button class="fn" data-action="const-c">c</button>
+        <button class="fn" data-action="const-mol">mol</button>
+        <button class="fn" data-action="const-k">k</button>
+        <button class="fn" data-action="const-hbar">ħ</button>
+        <button class="fn" data-action="const-epsilon0">ε₀</button>
+        <button class="fn" data-action="const-mu0">μ₀</button>
+        <button class="fn" data-action="const-G">G</button>
       </div>
     </section>
 
     <section class="panel">
-      <h3 class="panel-title">Other</h3>
+      <h3 class="panel-title">Memory</h3>
       <section class="memory-tools">
         <h3>Memory A-Z</h3>
         <div class="memory-row">
