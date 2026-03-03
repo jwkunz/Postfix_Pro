@@ -266,6 +266,10 @@
       grid-template-columns: 1fr 1fr;
     }
 
+    .matrix-a-only {
+      grid-column: 1 / -1;
+    }
+
     .matrix-grid label {
       display: grid;
       gap: 4px;
@@ -289,7 +293,7 @@
     .matrix-size-controls {
       display: grid;
       gap: 8px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
     }
 
     .matrix-size-group {
@@ -338,7 +342,7 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .matrix-presets .identity {
+    .identity {
       display: grid;
       grid-template-columns: 84px 1fr;
       gap: 8px;
@@ -347,6 +351,7 @@
     }
 
     .matrix-presets input,
+    .identity input,
     .complex-tools input {
       width: 100%;
       border: 1px solid var(--border);
@@ -546,7 +551,7 @@
         grid-template-columns: 1fr;
       }
 
-      .matrix-presets .identity {
+      .identity {
         grid-column: span 1;
       }
 
@@ -625,70 +630,71 @@
     </section>
 
     <section class="panel">
-      <section class="matrix-tools">
-        <h3>Matrix Builder & Operations</h3>
-        <div class="matrix-grid">
-          <label>
-            Matrix A
-            <textarea id="matrix-a-input" placeholder="1 2&#10;3 4"></textarea>
-          </label>
-          <label>
-            Matrix B
-            <textarea id="matrix-b-input" placeholder="5&#10;6"></textarea>
-          </label>
-        </div>
-        <div class="matrix-size-controls">
-          <div class="matrix-size-group">
-            <strong>Size A</strong>
-            <div class="matrix-size-row">
-              <input id="matrix-a-rows" type="number" min="1" step="1" value="2" aria-label="Matrix A rows">
-              <input id="matrix-a-cols" type="number" min="1" step="1" value="2" aria-label="Matrix A columns">
-              <button class="fn" id="apply-a-size-btn" type="button">Apply</button>
-            </div>
-          </div>
-          <div class="matrix-size-group">
-            <strong>Size B</strong>
-            <div class="matrix-size-row">
-              <input id="matrix-b-rows" type="number" min="1" step="1" value="2" aria-label="Matrix B rows">
-              <input id="matrix-b-cols" type="number" min="1" step="1" value="1" aria-label="Matrix B columns">
-              <button class="fn" id="apply-b-size-btn" type="button">Apply</button>
-            </div>
+      <h3 class="panel-title">Matrix Builder</h3>
+      <div class="matrix-grid">
+        <label class="matrix-a-only">
+          Matrix Entry
+          <textarea id="matrix-a-input" placeholder="1 2&#10;3 4"></textarea>
+        </label>
+      </div>
+      <div class="matrix-size-controls">
+        <div class="matrix-size-group">
+          <strong>Size A</strong>
+          <div class="matrix-size-row">
+            <input id="matrix-a-rows" type="number" min="1" step="1" value="2" aria-label="Matrix Entry rows">
+            <input id="matrix-a-cols" type="number" min="1" step="1" value="2" aria-label="Matrix Entry columns">
+            <button class="fn" id="apply-a-size-btn" type="button">Apply</button>
           </div>
         </div>
-        <div class="matrix-actions" id="matrix-op-actions">
-          <button class="fn" id="push-a-btn">Push A</button>
-          <button class="fn" id="push-b-btn">Push B</button>
-          <button class="op" id="solve-btn">Solve A*x=B</button>
-          <button class="fn" data-action="det">det</button>
-          <button class="fn" data-action="trace">trace</button>
-          <button class="fn" data-action="transpose">transpose</button>
-          <button class="fn" data-action="inverse">inverse</button>
-          <button class="fn" data-action="dot">dot</button>
-          <button class="fn" data-action="cross">cross</button>
-          <button class="fn" data-action="hadamard-mul">HadMul</button>
-          <button class="fn" data-action="hadamard-div">HadDiv</button>
-          <button class="fn" data-action="norm-p">norm_p</button>
-          <button class="fn" data-action="diag">diag</button>
-          <button class="fn" data-action="mat-exp">MatExp</button>
-          <button class="fn" data-action="hermitian">Herm</button>
-          <button class="fn" data-action="mat-pow">MatPow</button>
-          <button class="fn" data-action="qr">QR</button>
-          <button class="fn" data-action="lu">LU</button>
-          <button class="fn" data-action="svd">SVD</button>
-          <button class="fn" data-action="evd">EVD</button>
+      </div>
+      <div class="matrix-actions">
+        <button class="fn" id="push-a-btn">Push</button>
+        <button class="fn" id="preset-a-btn">Preset</button>
+        <button class="fn" id="import-csv-btn">Import CSV -> A</button>
+        <button class="fn" id="export-csv-btn">Export Top CSV</button>
+        <input id="matrix-csv-input" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import matrix CSV">
+        <div class="identity">
+          <input id="identity-size-input" type="number" min="1" step="1" value="3" aria-label="Identity size">
+          <button class="fn" id="push-identity-btn">Push I(n)</button>
         </div>
-        <div class="matrix-presets">
-          <button class="fn" id="preset-a-btn">Preset A 2x2</button>
-          <button class="fn" id="preset-b-btn">Preset B vec</button>
-          <button class="fn" id="import-csv-btn">Import CSV -> A</button>
-          <button class="fn" id="export-csv-btn">Export Top CSV</button>
-          <input id="matrix-csv-input" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import matrix CSV">
-          <div class="identity">
-            <input id="identity-size-input" type="number" min="1" step="1" value="3" aria-label="Identity size">
-            <button class="fn" id="push-identity-btn">Push I(n)</button>
-          </div>
-        </div>
-      </section>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Vector Operators</h3>
+      <div class="matrix-actions" data-advanced-actions>
+        <button class="fn" data-action="dot">dot</button>
+        <button class="fn" data-action="cross">cross</button>
+        <button class="fn" data-action="norm-p">norm_p</button>
+        <button class="fn" data-action="diag">diag</button>
+        <button class="fn" data-action="toep">Toep</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Matrix Operators</h3>
+      <div class="matrix-actions" data-advanced-actions>
+        <button class="op" id="solve-btn">Solve A*x=B</button>
+        <button class="fn" data-action="det">det</button>
+        <button class="fn" data-action="trace">trace</button>
+        <button class="fn" data-action="transpose">transpose</button>
+        <button class="fn" data-action="inverse">inverse</button>
+        <button class="fn" data-action="hadamard-mul">HadMul</button>
+        <button class="fn" data-action="hadamard-div">HadDiv</button>
+        <button class="fn" data-action="mat-exp">MatExp</button>
+        <button class="fn" data-action="hermitian">Herm</button>
+        <button class="fn" data-action="mat-pow">MatPow</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-title">Matrix Decompositions</h3>
+      <div class="matrix-actions" data-advanced-actions>
+        <button class="fn" data-action="qr">QR</button>
+        <button class="fn" data-action="lu">LU</button>
+        <button class="fn" data-action="svd">SVD</button>
+        <button class="fn" data-action="evd">EVD</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -700,11 +706,11 @@
         <button class="fn" data-action="pow">x^y</button>
         <button class="fn" data-action="root">x√y</button>
         <button class="fn" data-action="exp10">10^x</button>
+        <button class="fn" data-action="log10">log10</button>
         <button class="fn" data-action="exp">e^x</button>
         <button class="fn" data-action="ln">ln x</button>
         <button class="fn" data-action="exp2">2^x</button>
         <button class="fn" data-action="log2">log2 x</button>
-        <button class="fn" data-action="log10">log10</button>
         <button class="fn" data-action="signum">signum</button>
         <button class="fn" data-action="percent">%</button>
       </div>
@@ -775,16 +781,16 @@
     <section class="panel">
       <h3 class="panel-title">Constants</h3>
       <div class="science-actions" data-advanced-actions>
-        <button class="fn" data-action="pi">pi</button>
+        <button class="fn" data-action="pi">π</button>
         <button class="fn" data-action="e">e</button>
         <button class="fn" data-action="rand">ran#</button>
-        <button class="fn" data-action="const-euler-gamma">gamma</button>
+        <button class="fn" data-action="const-euler-gamma">γ</button>
         <button class="fn" data-action="const-c">c</button>
         <button class="fn" data-action="const-mol">mol</button>
         <button class="fn" data-action="const-k">k</button>
-        <button class="fn" data-action="const-hbar">hbar</button>
-        <button class="fn" data-action="const-epsilon0">epsilon_0</button>
-        <button class="fn" data-action="const-mu0">mu_0</button>
+        <button class="fn" data-action="const-hbar">ħ</button>
+        <button class="fn" data-action="const-epsilon0">ε₀</button>
+        <button class="fn" data-action="const-mu0">μ₀</button>
         <button class="fn" data-action="const-G">G</button>
       </div>
     </section>
@@ -839,19 +845,12 @@
     const runtimeHint = document.getElementById("runtime-hint");
     const keypad = document.getElementById("keypad");
     const matrixAInput = document.getElementById("matrix-a-input");
-    const matrixBInput = document.getElementById("matrix-b-input");
     const matrixARowsInput = document.getElementById("matrix-a-rows");
     const matrixAColsInput = document.getElementById("matrix-a-cols");
-    const matrixBRowsInput = document.getElementById("matrix-b-rows");
-    const matrixBColsInput = document.getElementById("matrix-b-cols");
     const applyASizeBtn = document.getElementById("apply-a-size-btn");
-    const applyBSizeBtn = document.getElementById("apply-b-size-btn");
-    const matrixOpActions = document.getElementById("matrix-op-actions");
     const pushABtn = document.getElementById("push-a-btn");
-    const pushBBtn = document.getElementById("push-b-btn");
     const solveBtn = document.getElementById("solve-btn");
     const presetABtn = document.getElementById("preset-a-btn");
-    const presetBBtn = document.getElementById("preset-b-btn");
     const importCsvBtn = document.getElementById("import-csv-btn");
     const exportCsvBtn = document.getElementById("export-csv-btn");
     const matrixCsvInput = document.getElementById("matrix-csv-input");
@@ -1609,6 +1608,7 @@
         "hadamard-div": "hadamard_div",
         "norm-p": "norm_p",
         diag: "diag",
+        toep: "toep",
         "mat-exp": "mat_exp",
         hermitian: "hermitian",
         "mat-pow": "mat_pow",
@@ -1666,20 +1666,9 @@
       });
     });
 
-    matrixOpActions.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-action]");
-      if (!button) return;
-      handleAction(button.dataset.action);
-    });
-
     pushABtn.addEventListener("click", () => {
       if (!wasmCalc) return;
       pushMatrixFromTextarea(matrixAInput);
-    });
-
-    pushBBtn.addEventListener("click", () => {
-      if (!wasmCalc) return;
-      pushMatrixFromTextarea(matrixBInput);
     });
 
     solveBtn.addEventListener("click", () => {
@@ -1691,13 +1680,6 @@
       matrixAInput.value = "1 2\n3 4";
       matrixARowsInput.value = "2";
       matrixAColsInput.value = "2";
-      setError("");
-    });
-
-    presetBBtn.addEventListener("click", () => {
-      matrixBInput.value = "5\n6";
-      matrixBRowsInput.value = "2";
-      matrixBColsInput.value = "1";
       setError("");
     });
 
@@ -1723,11 +1705,7 @@
     });
 
     applyASizeBtn.addEventListener("click", () => {
-      applyMatrixSize(matrixAInput, matrixARowsInput, matrixAColsInput, "Matrix A");
-    });
-
-    applyBSizeBtn.addEventListener("click", () => {
-      applyMatrixSize(matrixBInput, matrixBRowsInput, matrixBColsInput, "Matrix B");
+      applyMatrixSize(matrixAInput, matrixARowsInput, matrixAColsInput, "Matrix Entry");
     });
 
     pushIdentityBtn.addEventListener("click", () => {

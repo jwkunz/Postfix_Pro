@@ -498,6 +498,11 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn toep(&mut self) -> ApiResponse {
+        let result = self.calculator.toep();
+        self.wrap(result)
+    }
+
     pub fn mat_exp(&mut self) -> ApiResponse {
         let result = self.calculator.mat_exp();
         self.wrap(result)
@@ -1108,6 +1113,11 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn toep(&mut self) -> String {
+            serde_json::to_string(&self.inner.toep())
+                .expect("response serialization should succeed")
+        }
+
         pub fn mat_exp(&mut self) -> String {
             serde_json::to_string(&self.inner.mat_exp())
                 .expect("response serialization should succeed")
@@ -1443,6 +1453,34 @@ mod tests {
                     c(0.0, 0.0),
                     c(0.0, 0.0),
                     c(3.0, 0.0),
+                ]
+            }]
+        );
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0)],
+        });
+
+        let toep_response = api.toep();
+        assert!(toep_response.ok);
+        assert_eq!(
+            toep_response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 3,
+                cols: 3,
+                data: vec![
+                    c(1.0, 0.0),
+                    c(2.0, 0.0),
+                    c(3.0, 0.0),
+                    c(2.0, 0.0),
+                    c(1.0, 0.0),
+                    c(2.0, 0.0),
+                    c(3.0, 0.0),
+                    c(2.0, 0.0),
+                    c(1.0, 0.0),
                 ]
             }]
         );

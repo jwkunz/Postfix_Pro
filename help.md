@@ -26,12 +26,19 @@ Stack labels:
 - `0..9`, `.`, `EXP`: number entry (`EXP` inserts `E` for scientific notation, e.g. `2.3E3`)
 - `Enter`: push entry buffer onto stack
 
-## Matrix Panel
+## Matrix Panels
 
-- `Push A`, `Push B`: parse matrix text and push to stack
-- `Import CSV -> A`: load a CSV file into Matrix A text area and size controls
+- `Matrix Builder`: Matrix Entry box, sizing, Push, CSV import/export, and preset template
+- `Vector Operators`: dot, cross, norm_p, diag, and Toep
+- `Matrix Operators`: solve, det, trace, transpose, inverse, Hadamard ops, MatExp, Herm, MatPow
+- `Matrix Decompositions`: QR, LU, SVD, EVD
+
+### Matrix Operations
+
+- `Push`: parse matrix text and push to stack (use repeatedly to push multiple matrices)
+- `Import CSV -> A`: load a CSV file into the Matrix Entry text area and size controls
 - `Export Top CSV`: write the top-of-stack matrix to a downloadable `matrix.csv` file
-- `Size A` / `Size B` controls:
+- `Size A` controls:
   - set rows + columns
   - press `Apply` to regenerate matrix text with that size
 - `Solve A*x=B`: solve linear system using top two matrices
@@ -45,6 +52,7 @@ Stack labels:
 - `HadDiv`: element-wise division (matrix by same-shape matrix, matrix/scalar, or scalar/matrix)
 - `norm_p`: p-norm (push matrix/vector, then push `p`, then press `norm_p`)
 - `diag`: convert vector matrix (`Nx1` or `1xN`) into a diagonal matrix
+- `Toep`: convert vector matrix (`Nx1` or `1xN`) into a Toeplitz matrix using `T[i,j] = v[|i-j|]`
 - `MatExp`: matrix exponential of top square matrix (`e^A`)
 - `Herm`: Hermitian (conjugate transpose) of top matrix
 - `MatPow`: integer matrix power (push matrix, then integer exponent, then press `MatPow`)
@@ -52,14 +60,14 @@ Stack labels:
 - `LU`: LU decomposition with partial pivoting; replaces top matrix with `P` and pushes `L`, then `U` (so `P*A = L*U`)
 - `SVD`: singular value decomposition for real-valued matrices; replaces top matrix with `U` and pushes `S`, then `Vt`
 - `EVD`: eigendecomposition; replaces top matrix with `V` and pushes `D`. If exact diagonalization is unavailable, returns Schur form (`Q`, `T`) with a warning.
-- `Preset A 2x2`, `Preset B vec`: convenience templates
-- `Push I(n)`: push identity matrix of size `n`
+- `Preset`: convenience template
+- `Push I(n)`: push identity matrix of size `n` (from Matrix Builder panel)
 
 Matrix input format:
 
 - One row per line
 - Values separated by spaces or commas
-- Values are parsed when you press `Push A` / `Push B` (free-form text allowed while typing)
+- Values are parsed when you press `Push` (free-form text allowed while typing)
 - Scientific notation is supported in values (e.g. `-1.2E-3`)
 - Matrix entries are cast to complex values on push (`x` becomes `x + 0i`)
 - Complex matrix literals can be entered as `(re,im)` (example: `(1.5,-2)` or `(2E1,3E-2)`)

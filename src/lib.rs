@@ -1126,6 +1126,15 @@ impl Calculator {
         })
     }
 
+    pub fn toep(&mut self) -> Result<(), CalcError> {
+        self.apply_unary_op(|value| match value {
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_toeplitz(matrix)?)),
+            _ => Err(CalcError::TypeMismatch(
+                "toep requires a vector matrix value".to_string(),
+            )),
+        })
+    }
+
     pub fn mat_exp(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Matrix(Self::matrix_exp(matrix)?)),
@@ -1801,6 +1810,18 @@ impl Calculator {
         let mut data = vec![Complex { re: 0.0, im: 0.0 }; n * n];
         for i in 0..n {
             data[i * n + i] = Self::from_complex64(vector[i]);
+        }
+        Matrix::new(n, n, data)
+    }
+
+    fn matrix_toeplitz(matrix: &Matrix) -> Result<Matrix, CalcError> {
+        let vector = Self::matrix_vector(matrix)?;
+        let n = vector.len();
+        let mut data = Vec::with_capacity(n * n);
+        for row in 0..n {
+            for col in 0..n {
+                data.push(Self::from_complex64(vector[row.abs_diff(col)]));
+            }
         }
         Matrix::new(n, n, data)
     }
@@ -2968,6 +2989,18 @@ mod tests {
                 assert_matrix_close(actual, &expected, 1e-12);
             }
             other => panic!("expected matrix diag value, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[1.0, 2.0, 3.0])));
+
+        assert_eq!(calc.toep(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(actual)] => {
+                let expected = matrix(3, 3, &[1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 2.0, 1.0]);
+                assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("expected matrix toep value, got {other:?}"),
         }
 
         calc.clear_all();
