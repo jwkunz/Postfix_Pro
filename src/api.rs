@@ -491,6 +491,16 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn qr(&mut self) -> ApiResponse {
+        let result = self.calculator.qr();
+        self.wrap(result)
+    }
+
+    pub fn lu(&mut self) -> ApiResponse {
+        let result = self.calculator.lu();
+        self.wrap(result)
+    }
+
     pub fn mean(&mut self) -> ApiResponse {
         let result = self.calculator.mean();
         self.wrap(result)
@@ -1042,6 +1052,14 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn qr(&mut self) -> String {
+            serde_json::to_string(&self.inner.qr()).expect("response serialization should succeed")
+        }
+
+        pub fn lu(&mut self) -> String {
+            serde_json::to_string(&self.inner.lu()).expect("response serialization should succeed")
+        }
+
         pub fn mean(&mut self) -> String {
             serde_json::to_string(&self.inner.mean())
                 .expect("response serialization should succeed")
@@ -1296,6 +1314,31 @@ mod tests {
             }
             other => panic!("expected matrix response, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn qr_and_lu_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)],
+        });
+
+        let qr_response = api.qr();
+        assert!(qr_response.ok);
+        assert_eq!(qr_response.state.stack.len(), 2);
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(4.0, 0.0), c(3.0, 0.0), c(6.0, 0.0), c(3.0, 0.0)],
+        });
+
+        let lu_response = api.lu();
+        assert!(lu_response.ok);
+        assert_eq!(lu_response.state.stack.len(), 3);
     }
 
     #[test]

@@ -42,6 +42,8 @@ Stack labels:
 - `norm_p`: p-norm (push matrix/vector, then push `p`, then press `norm_p`)
 - `diag`: convert vector matrix (`Nx1` or `1xN`) into a diagonal matrix
 - `MatExp`: matrix exponential of top square matrix (`e^A`)
+- `QR`: QR decomposition; replaces top matrix with `Q` and pushes `R`
+- `LU`: LU decomposition with partial pivoting; replaces top matrix with `P` and pushes `L`, then `U` (so `P*A = L*U`)
 - `Preset A 2x2`, `Preset B vec`: convenience templates
 - `Push I(n)`: push identity matrix of size `n`
 

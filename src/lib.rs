@@ -1094,6 +1094,43 @@ impl Calculator {
         })
     }
 
+    pub fn qr(&mut self) -> Result<(), CalcError> {
+        self.require_stack_len(1)?;
+        let len = self.state.stack.len();
+        let matrix = match self.state.stack.get(len - 1) {
+            Some(Value::Matrix(matrix)) => matrix.clone(),
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "QR requires a matrix value".to_string(),
+                ));
+            }
+        };
+
+        let (q, r) = Self::matrix_qr(&matrix)?;
+        self.state.stack[len - 1] = Value::Matrix(q);
+        self.state.stack.push(Value::Matrix(r));
+        Ok(())
+    }
+
+    pub fn lu(&mut self) -> Result<(), CalcError> {
+        self.require_stack_len(1)?;
+        let len = self.state.stack.len();
+        let matrix = match self.state.stack.get(len - 1) {
+            Some(Value::Matrix(matrix)) => matrix.clone(),
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "LU requires a matrix value".to_string(),
+                ));
+            }
+        };
+
+        let (p, l, u) = Self::matrix_lu(&matrix)?;
+        self.state.stack[len - 1] = Value::Matrix(p);
+        self.state.stack.push(Value::Matrix(l));
+        self.state.stack.push(Value::Matrix(u));
+        Ok(())
+    }
+
     pub fn mean(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Real(Self::matrix_mean(matrix)?)),
@@ -1670,6 +1707,109 @@ impl Calculator {
         }
 
         Matrix::new(n, n, out)
+    }
+
+    fn dmatrix_to_matrix(matrix: &DMatrix<Complex64>) -> Matrix {
+        let rows = matrix.nrows();
+        let cols = matrix.ncols();
+        let mut out = Vec::with_capacity(rows * cols);
+        for row in 0..rows {
+            for col in 0..cols {
+                out.push(Self::from_complex64(matrix[(row, col)]));
+            }
+        }
+        Matrix {
+            rows,
+            cols,
+            data: out,
+        }
+    }
+
+    fn matrix_qr(matrix: &Matrix) -> Result<(Matrix, Matrix), CalcError> {
+        let a = Self::matrix_to_dmatrix(matrix);
+        let m = a.nrows();
+        let n = a.ncols();
+        let mut q = DMatrix::<Complex64>::zeros(m, n);
+        let mut r = DMatrix::<Complex64>::zeros(n, n);
+        let eps = 1e-12;
+
+        for j in 0..n {
+            let mut v = a.column(j).into_owned();
+            for i in 0..j {
+                let q_i = q.column(i);
+                let rij = q_i.dotc(&v);
+                r[(i, j)] = rij;
+                v -= q_i * rij;
+            }
+
+            let norm = v.norm();
+            if norm <= eps {
+                return Err(CalcError::SingularMatrix(
+                    "QR failed: matrix columns are linearly dependent".to_string(),
+                ));
+            }
+
+            r[(j, j)] = Complex64::new(norm, 0.0);
+            let qj = v.map(|value| value / norm);
+            q.set_column(j, &qj);
+        }
+
+        Ok((Self::dmatrix_to_matrix(&q), Self::dmatrix_to_matrix(&r)))
+    }
+
+    fn matrix_lu(matrix: &Matrix) -> Result<(Matrix, Matrix, Matrix), CalcError> {
+        Self::require_square(matrix, "LU")?;
+
+        let n = matrix.rows;
+        let mut u = Self::matrix_to_dmatrix(matrix);
+        let mut l = DMatrix::<Complex64>::identity(n, n);
+        let mut p = DMatrix::<Complex64>::identity(n, n);
+        let eps = 1e-12;
+
+        for k in 0..n {
+            let mut pivot_row = k;
+            let mut pivot_abs = u[(k, k)].norm();
+            for row in (k + 1)..n {
+                let candidate = u[(row, k)].norm();
+                if candidate > pivot_abs {
+                    pivot_abs = candidate;
+                    pivot_row = row;
+                }
+            }
+
+            if pivot_abs <= eps {
+                return Err(CalcError::SingularMatrix(
+                    "LU failed: matrix is singular".to_string(),
+                ));
+            }
+
+            if pivot_row != k {
+                u.swap_rows(k, pivot_row);
+                p.swap_rows(k, pivot_row);
+                for col in 0..k {
+                    let tmp = l[(k, col)];
+                    l[(k, col)] = l[(pivot_row, col)];
+                    l[(pivot_row, col)] = tmp;
+                }
+            }
+
+            let pivot = u[(k, k)];
+            for row in (k + 1)..n {
+                let factor = u[(row, k)] / pivot;
+                l[(row, k)] = factor;
+                u[(row, k)] = Complex64::new(0.0, 0.0);
+                for col in (k + 1)..n {
+                    let upper = u[(k, col)];
+                    u[(row, col)] -= factor * upper;
+                }
+            }
+        }
+
+        Ok((
+            Self::dmatrix_to_matrix(&p),
+            Self::dmatrix_to_matrix(&l),
+            Self::dmatrix_to_matrix(&u),
+        ))
     }
 
     fn matrix_real_vector(matrix: &Matrix) -> Result<Vec<f64>, CalcError> {
@@ -2525,6 +2665,50 @@ mod tests {
                 assert_matrix_close(actual, &expected, 1e-10);
             }
             other => panic!("expected matrix MatExp value, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn qr_and_lu_decompose() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+
+        assert_eq!(calc.qr(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(q), Value::Matrix(r)] => {
+                let a11 = q.data[0].re * r.data[0].re + q.data[1].re * r.data[2].re;
+                let a12 = q.data[0].re * r.data[1].re + q.data[1].re * r.data[3].re;
+                let a21 = q.data[2].re * r.data[0].re + q.data[3].re * r.data[2].re;
+                let a22 = q.data[2].re * r.data[1].re + q.data[3].re * r.data[3].re;
+                assert_real_close(a11, 1.0, 1e-10);
+                assert_real_close(a12, 2.0, 1e-10);
+                assert_real_close(a21, 3.0, 1e-10);
+                assert_real_close(a22, 4.0, 1e-10);
+            }
+            other => panic!("expected Q and R on stack, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[4.0, 3.0, 6.0, 3.0])));
+        assert_eq!(calc.lu(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(p), Value::Matrix(l), Value::Matrix(u)] => {
+                let pa11 = p.data[0].re * 4.0 + p.data[1].re * 6.0;
+                let pa12 = p.data[0].re * 3.0 + p.data[1].re * 3.0;
+                let pa21 = p.data[2].re * 4.0 + p.data[3].re * 6.0;
+                let pa22 = p.data[2].re * 3.0 + p.data[3].re * 3.0;
+
+                let lu11 = l.data[0].re * u.data[0].re + l.data[1].re * u.data[2].re;
+                let lu12 = l.data[0].re * u.data[1].re + l.data[1].re * u.data[3].re;
+                let lu21 = l.data[2].re * u.data[0].re + l.data[3].re * u.data[2].re;
+                let lu22 = l.data[2].re * u.data[1].re + l.data[3].re * u.data[3].re;
+
+                assert_real_close(pa11, lu11, 1e-10);
+                assert_real_close(pa12, lu12, 1e-10);
+                assert_real_close(pa21, lu21, 1e-10);
+                assert_real_close(pa22, lu22, 1e-10);
+            }
+            other => panic!("expected P, L and U on stack, got {other:?}"),
         }
     }
 
