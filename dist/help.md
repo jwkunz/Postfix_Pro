@@ -87,6 +87,7 @@ Example:
 
 ### Trig / Angle
 
+- If top-of-stack is a matrix, trig/angle operators apply element-wise.
 - `sin`, `asin`, `cos`, `acos`, `tan`, `atan`
 - `atan2`: binary operation using stack order `(y, x)`
 - `to rad`: convert top real value degrees -> radians
@@ -96,6 +97,7 @@ Example:
 
 ### Powers / Logs / Core
 
+- If top-of-stack is a matrix, scalar core operators apply element-wise.
 - `inv x`: reciprocal (`1/x`)
 - `x^2`: square
 - `sqrt`: square root
@@ -110,6 +112,7 @@ Example:
 
 ### Complex
 
+- If top-of-stack is a matrix, complex operators apply element-wise.
 - `abs`: magnitude
 - `abs^2`: squared magnitude
 - `arg`: phase/argument (respects RAD/DEG mode)
@@ -126,6 +129,7 @@ Example:
 
 ### Integer / Number Tools
 
+- Rounding operators (`round`, `floor`, `ceil`, `dec part`) apply element-wise to matrices.
 - `n!`: factorial (non-negative integer)
 - `nCr`: combinations
 - `nPr`: permutations

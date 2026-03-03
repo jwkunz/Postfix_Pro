@@ -352,9 +352,11 @@ impl Calculator {
             )),
             Value::Real(v) => Ok(Value::Real(v.sqrt())),
             Value::Complex(c) => Ok(Value::Complex(Self::complex_sqrt(*c))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "sqrt does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::complex_sqrt(entry))
+                })?))
+            }
         })
     }
 
@@ -362,9 +364,11 @@ impl Calculator {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.exp())),
             Value::Complex(c) => Ok(Value::Complex(Self::complex_exp(*c))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "exp does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::complex_exp(entry))
+                })?))
+            }
         })
     }
 
@@ -375,9 +379,11 @@ impl Calculator {
             )),
             Value::Real(v) => Ok(Value::Real(v.ln())),
             Value::Complex(c) => Ok(Value::Complex(Self::complex_ln(*c))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "ln does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).ln()))
+                })?))
+            }
         })
     }
 
@@ -392,9 +398,11 @@ impl Calculator {
                 Ok(Value::Real(radians.sin()))
             }
             Value::Complex(c) => Ok(Value::Complex(Self::complex_sin(*c))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "sin does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).sin()))
+                })?))
+            }
         })
     }
 
@@ -409,9 +417,11 @@ impl Calculator {
                 Ok(Value::Real(radians.cos()))
             }
             Value::Complex(c) => Ok(Value::Complex(Self::complex_cos(*c))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "cos does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).cos()))
+                })?))
+            }
         })
     }
 
@@ -439,9 +449,11 @@ impl Calculator {
                         / denom_norm,
                 }))
             }
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "tan does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).tan()))
+                })?))
+            }
         })
     }
 
@@ -462,9 +474,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).asin(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "asin does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).asin()))
+                })?))
+            }
         })
     }
 
@@ -485,9 +499,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).acos(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "acos does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).acos()))
+                })?))
+            }
         })
     }
 
@@ -505,9 +521,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).atan(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "atan does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).atan()))
+                })?))
+            }
         })
     }
 
@@ -517,9 +535,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).sinh(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "sinh does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).sinh()))
+                })?))
+            }
         })
     }
 
@@ -529,9 +549,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).cosh(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "cosh does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).cosh()))
+                })?))
+            }
         })
     }
 
@@ -541,9 +563,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).tanh(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "tanh does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).tanh()))
+                })?))
+            }
         })
     }
 
@@ -553,9 +577,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).asinh(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "asinh does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).asinh()))
+                })?))
+            }
         })
     }
 
@@ -568,9 +594,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).acosh(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "acosh does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).acosh()))
+                })?))
+            }
         })
     }
 
@@ -583,9 +611,11 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Self::to_complex64(*c).atanh(),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "atanh does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).atanh()))
+                })?))
+            }
         })
     }
 
@@ -600,9 +630,12 @@ impl Calculator {
                 let out = Self::to_complex64(*c).ln() / ln10;
                 Ok(Value::Complex(Self::from_complex64(out)))
             }
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "log10 does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                let ln10 = Complex64::new(10.0, 0.0).ln();
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).ln() / ln10))
+                })?))
+            }
         })
     }
 
@@ -612,9 +645,11 @@ impl Calculator {
             Value::Complex(_) => Err(CalcError::TypeMismatch(
                 "gamma currently supports real values only".to_string(),
             )),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "gamma does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "gamma",
+                |v| Ok(Self::real_gamma(v)),
+            )?)),
         })
     }
 
@@ -624,14 +659,20 @@ impl Calculator {
             Value::Complex(_) => Err(CalcError::TypeMismatch(
                 "erf currently supports real values only".to_string(),
             )),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "erf does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "erf",
+                |v| Ok(Self::real_erf(v)),
+            )?)),
         })
     }
 
     pub fn pow(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(_), Value::Matrix(_)) => {
+                Self::matrix_elementwise_binary(left, right, "pow", |lhs, rhs| Ok(lhs.powc(rhs)))?
+                    .ok_or_else(|| CalcError::TypeMismatch("pow requires operands".to_string()))
+            }
             (Value::Matrix(a), scalar) => {
                 let scalar = Self::as_complex(scalar, "pow")?;
                 Ok(Value::Matrix(Self::matrix_scalar_pow(a, scalar)))
@@ -652,6 +693,17 @@ impl Calculator {
 
     pub fn percent(&mut self) -> Result<(), CalcError> {
         self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(_), _) | (_, Value::Matrix(_)) => {
+                Self::matrix_elementwise_binary(left, right, "percent", |lhs, rhs| {
+                    if lhs.im.abs() > 1e-12 || rhs.im.abs() > 1e-12 {
+                        return Err(CalcError::TypeMismatch(
+                            "percent requires real-valued operands".to_string(),
+                        ));
+                    }
+                    Ok(Complex64::new(lhs.re * rhs.re / 100.0, 0.0))
+                })?
+                .ok_or_else(|| CalcError::TypeMismatch("percent requires operands".to_string()))
+            }
             (Value::Real(base), Value::Real(percent)) => Ok(Value::Real(base * percent / 100.0)),
             _ => Err(CalcError::TypeMismatch(
                 "percent currently supports real values only".to_string(),
@@ -677,9 +729,18 @@ impl Calculator {
                     im: -c.im / denom,
                 }))
             }
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "inv does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    let denom = entry.re * entry.re + entry.im * entry.im;
+                    if denom == 0.0 {
+                        return Err(CalcError::DivideByZero);
+                    }
+                    Ok(Complex {
+                        re: entry.re / denom,
+                        im: -entry.im / denom,
+                    })
+                })?))
+            }
         })
     }
 
@@ -690,26 +751,41 @@ impl Calculator {
                 re: c.re * c.re - c.im * c.im,
                 im: 2.0 * c.re * c.im,
             })),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "square does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    let z = Self::to_complex64(entry);
+                    Ok(Self::from_complex64(z * z))
+                })?))
+            }
         })
     }
 
     pub fn root(&mut self) -> Result<(), CalcError> {
-        self.apply_binary_op(|left, right| match (left, right) {
-            (Value::Real(x), Value::Real(y)) => {
-                if *y == 0.0 {
-                    return Err(CalcError::DivideByZero);
-                }
-                Ok(Value::Real(x.powf(1.0 / y)))
+        self.apply_binary_op(|left, right| {
+            if let Some(value) =
+                Self::matrix_elementwise_binary(left, right, "root", |lhs, rhs| {
+                    if rhs.norm() == 0.0 {
+                        return Err(CalcError::DivideByZero);
+                    }
+                    Ok(lhs.powc(Complex64::new(1.0, 0.0) / rhs))
+                })?
+            {
+                return Ok(value);
             }
-            _ => {
-                let x = Self::as_complex(left, "root")?;
-                let y = Self::as_complex(right, "root")?;
-                let out =
-                    Self::to_complex64(x).powc(Complex64::new(1.0, 0.0) / Self::to_complex64(y));
-                Ok(Value::Complex(Self::from_complex64(out)))
+            match (left, right) {
+                (Value::Real(x), Value::Real(y)) => {
+                    if *y == 0.0 {
+                        return Err(CalcError::DivideByZero);
+                    }
+                    Ok(Value::Real(x.powf(1.0 / y)))
+                }
+                _ => {
+                    let x = Self::as_complex(left, "root")?;
+                    let y = Self::as_complex(right, "root")?;
+                    let out = Self::to_complex64(x)
+                        .powc(Complex64::new(1.0, 0.0) / Self::to_complex64(y));
+                    Ok(Value::Complex(Self::from_complex64(out)))
+                }
             }
         })
     }
@@ -720,9 +796,13 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Complex64::new(10.0, 0.0).powc(Self::to_complex64(*c)),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "10^x does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(
+                        Complex64::new(10.0, 0.0).powc(Self::to_complex64(entry)),
+                    ))
+                })?))
+            }
         })
     }
 
@@ -732,9 +812,13 @@ impl Calculator {
             Value::Complex(c) => Ok(Value::Complex(Self::from_complex64(
                 Complex64::new(2.0, 0.0).powc(Self::to_complex64(*c)),
             ))),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "2^x does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(
+                        Complex64::new(2.0, 0.0).powc(Self::to_complex64(entry)),
+                    ))
+                })?))
+            }
         })
     }
 
@@ -748,9 +832,12 @@ impl Calculator {
                 let out = Self::to_complex64(*c).ln() / Complex64::new(2.0, 0.0).ln();
                 Ok(Value::Complex(Self::from_complex64(out)))
             }
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "log2 does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                let ln2 = Complex64::new(2.0, 0.0).ln();
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Self::from_complex64(Self::to_complex64(entry).ln() / ln2))
+                })?))
+            }
         })
     }
 
@@ -768,9 +855,19 @@ impl Calculator {
                     }))
                 }
             }
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "signum does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    let norm = (entry.re * entry.re + entry.im * entry.im).sqrt();
+                    if norm == 0.0 {
+                        Ok(Complex { re: 0.0, im: 0.0 })
+                    } else {
+                        Ok(Complex {
+                            re: entry.re / norm,
+                            im: entry.im / norm,
+                        })
+                    }
+                })?))
+            }
         })
     }
 
@@ -778,9 +875,14 @@ impl Calculator {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.abs())),
             Value::Complex(c) => Ok(Value::Real((c.re * c.re + c.im * c.im).sqrt())),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "abs does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Complex {
+                        re: (entry.re * entry.re + entry.im * entry.im).sqrt(),
+                        im: 0.0,
+                    })
+                })?))
+            }
         })
     }
 
@@ -788,9 +890,14 @@ impl Calculator {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v * v)),
             Value::Complex(c) => Ok(Value::Real(c.re * c.re + c.im * c.im)),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "abs^2 does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Complex {
+                        re: entry.re * entry.re + entry.im * entry.im,
+                        im: 0.0,
+                    })
+                })?))
+            }
         })
     }
 
@@ -813,9 +920,16 @@ impl Calculator {
                 };
                 Ok(Value::Real(out))
             }
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "arg does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    let radians = entry.im.atan2(entry.re);
+                    let out = match mode {
+                        AngleMode::Deg => radians.to_degrees(),
+                        AngleMode::Rad => radians,
+                    };
+                    Ok(Complex { re: out, im: 0.0 })
+                })?))
+            }
         })
     }
 
@@ -834,9 +948,14 @@ impl Calculator {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(*v)),
             Value::Complex(c) => Ok(Value::Real(c.re)),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "real() does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Complex {
+                        re: entry.re,
+                        im: 0.0,
+                    })
+                })?))
+            }
         })
     }
 
@@ -844,31 +963,59 @@ impl Calculator {
         self.apply_unary_op(|value| match value {
             Value::Real(_) => Ok(Value::Real(0.0)),
             Value::Complex(c) => Ok(Value::Real(c.im)),
-            Value::Matrix(_) => Err(CalcError::TypeMismatch(
-                "imag() does not support matrix values".to_string(),
-            )),
+            Value::Matrix(matrix) => {
+                Ok(Value::Matrix(Self::map_matrix_entries(matrix, |entry| {
+                    Ok(Complex {
+                        re: entry.im,
+                        im: 0.0,
+                    })
+                })?))
+            }
         })
     }
 
     pub fn atan2(&mut self) -> Result<(), CalcError> {
         let mode = self.state.angle_mode;
-        self.apply_binary_op(|left, right| match (left, right) {
-            (Value::Real(y), Value::Real(x)) => {
-                let mut out = y.atan2(*x);
-                if mode == AngleMode::Deg {
-                    out = out.to_degrees();
-                }
-                Ok(Value::Real(out))
+        self.apply_binary_op(|left, right| {
+            if let Some(value) =
+                Self::matrix_elementwise_binary(left, right, "atan2", |lhs, rhs| {
+                    if lhs.im.abs() > 1e-12 || rhs.im.abs() > 1e-12 {
+                        return Err(CalcError::TypeMismatch(
+                            "atan2 requires real-valued operands".to_string(),
+                        ));
+                    }
+                    let mut out = lhs.re.atan2(rhs.re);
+                    if mode == AngleMode::Deg {
+                        out = out.to_degrees();
+                    }
+                    Ok(Complex64::new(out, 0.0))
+                })?
+            {
+                return Ok(value);
             }
-            _ => Err(CalcError::TypeMismatch(
-                "atan2 requires two real operands (y then x)".to_string(),
-            )),
+            match (left, right) {
+                (Value::Real(y), Value::Real(x)) => {
+                    let mut out = y.atan2(*x);
+                    if mode == AngleMode::Deg {
+                        out = out.to_degrees();
+                    }
+                    Ok(Value::Real(out))
+                }
+                _ => Err(CalcError::TypeMismatch(
+                    "atan2 requires two real operands (y then x)".to_string(),
+                )),
+            }
         })
     }
 
     pub fn to_rad(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.to_radians())),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "to_rad",
+                |v| Ok(v.to_radians()),
+            )?)),
             _ => Err(CalcError::TypeMismatch(
                 "to_rad currently supports real values only".to_string(),
             )),
@@ -878,6 +1025,11 @@ impl Calculator {
     pub fn to_deg(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.to_degrees())),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "to_deg",
+                |v| Ok(v.to_degrees()),
+            )?)),
             _ => Err(CalcError::TypeMismatch(
                 "to_deg currently supports real values only".to_string(),
             )),
@@ -993,6 +1145,11 @@ impl Calculator {
     pub fn round_value(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.round())),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "round",
+                |v| Ok(v.round()),
+            )?)),
             _ => Err(CalcError::TypeMismatch(
                 "rnd currently supports real values only".to_string(),
             )),
@@ -1002,6 +1159,11 @@ impl Calculator {
     pub fn floor_value(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.floor())),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "floor",
+                |v| Ok(v.floor()),
+            )?)),
             _ => Err(CalcError::TypeMismatch(
                 "floor currently supports real values only".to_string(),
             )),
@@ -1011,6 +1173,11 @@ impl Calculator {
     pub fn ceil_value(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v.ceil())),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "ceil",
+                |v| Ok(v.ceil()),
+            )?)),
             _ => Err(CalcError::TypeMismatch(
                 "ceil currently supports real values only".to_string(),
             )),
@@ -1020,6 +1187,11 @@ impl Calculator {
     pub fn dec_part(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) => Ok(Value::Real(v - v.trunc())),
+            Value::Matrix(matrix) => Ok(Value::Matrix(Self::map_matrix_real_entries(
+                matrix,
+                "decP",
+                |v| Ok(v - v.trunc()),
+            )?)),
             _ => Err(CalcError::TypeMismatch(
                 "decP currently supports real values only".to_string(),
             )),
@@ -1408,6 +1580,81 @@ impl Calculator {
         self.state.stack.truncate(len - 2);
         self.state.stack.push(result);
         Ok(())
+    }
+
+    fn map_matrix_entries<F>(matrix: &Matrix, mut op: F) -> Result<Matrix, CalcError>
+    where
+        F: FnMut(Complex) -> Result<Complex, CalcError>,
+    {
+        let mut data = Vec::with_capacity(matrix.data.len());
+        for value in &matrix.data {
+            data.push(op(*value)?);
+        }
+        Matrix::new(matrix.rows, matrix.cols, data)
+    }
+
+    fn map_matrix_real_entries<F>(
+        matrix: &Matrix,
+        op_name: &str,
+        mut op: F,
+    ) -> Result<Matrix, CalcError>
+    where
+        F: FnMut(f64) -> Result<f64, CalcError>,
+    {
+        let mut data = Vec::with_capacity(matrix.data.len());
+        for value in &matrix.data {
+            if value.im.abs() > 1e-12 {
+                return Err(CalcError::TypeMismatch(format!(
+                    "{op_name} requires real-valued matrix entries"
+                )));
+            }
+            data.push(Complex {
+                re: op(value.re)?,
+                im: 0.0,
+            });
+        }
+        Matrix::new(matrix.rows, matrix.cols, data)
+    }
+
+    fn matrix_elementwise_binary<F>(
+        left: &Value,
+        right: &Value,
+        op_name: &str,
+        mut op: F,
+    ) -> Result<Option<Value>, CalcError>
+    where
+        F: FnMut(Complex64, Complex64) -> Result<Complex64, CalcError>,
+    {
+        match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => {
+                Self::require_same_shape(a, b, op_name)?;
+                let mut data = Vec::with_capacity(a.data.len());
+                for (lhs, rhs) in a.data.iter().zip(&b.data) {
+                    data.push(Self::from_complex64(op(
+                        Self::to_complex64(*lhs),
+                        Self::to_complex64(*rhs),
+                    )?));
+                }
+                Ok(Some(Value::Matrix(Matrix::new(a.rows, a.cols, data)?)))
+            }
+            (Value::Matrix(a), scalar) => {
+                let rhs = Self::to_complex64(Self::as_complex(scalar, op_name)?);
+                let mut data = Vec::with_capacity(a.data.len());
+                for lhs in &a.data {
+                    data.push(Self::from_complex64(op(Self::to_complex64(*lhs), rhs)?));
+                }
+                Ok(Some(Value::Matrix(Matrix::new(a.rows, a.cols, data)?)))
+            }
+            (scalar, Value::Matrix(b)) => {
+                let lhs = Self::to_complex64(Self::as_complex(scalar, op_name)?);
+                let mut data = Vec::with_capacity(b.data.len());
+                for rhs in &b.data {
+                    data.push(Self::from_complex64(op(lhs, Self::to_complex64(*rhs))?));
+                }
+                Ok(Some(Value::Matrix(Matrix::new(b.rows, b.cols, data)?)))
+            }
+            _ => Ok(None),
+        }
     }
 
     fn as_complex(value: &Value, op: &str) -> Result<Complex, CalcError> {
@@ -3045,6 +3292,70 @@ mod tests {
         match calc.state().stack.as_slice() {
             [Value::Real(v)] => assert_real_close(*v, 8.0 / 3.0, 1e-12),
             other => panic!("expected scalar-stack mean value, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn scalar_complex_rounding_ops_apply_elementwise_to_matrices() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[3.0, 4.0, 5.0])));
+        calc.push_value(Value::Real(2.0));
+        assert_eq!(calc.pow(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(actual)] => {
+                let expected = matrix(1, 3, &[9.0, 16.0, 25.0]);
+                assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("expected matrix after elementwise pow, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[-3.0, 0.0, 4.0])));
+        assert_eq!(calc.abs(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(actual)] => {
+                let expected = matrix(1, 3, &[3.0, 0.0, 4.0]);
+                assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("expected matrix after elementwise abs, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[180.0, 90.0, 0.0])));
+        assert_eq!(calc.to_rad(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(actual)] => {
+                let expected = matrix(
+                    1,
+                    3,
+                    &[std::f64::consts::PI, std::f64::consts::FRAC_PI_2, 0.0],
+                );
+                assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("expected matrix after elementwise to_rad, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[1.2, -2.5, 3.8])));
+        assert_eq!(calc.round_value(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(actual)] => {
+                let expected = matrix(1, 3, &[1.0, -3.0, 4.0]);
+                assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("expected matrix after elementwise round, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 2, &[50.0, 10.0])));
+        calc.push_value(Value::Real(20.0));
+        assert_eq!(calc.percent(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(actual)] => {
+                let expected = matrix(1, 2, &[10.0, 2.0]);
+                assert_matrix_close(actual, &expected, 1e-12);
+            }
+            other => panic!("expected matrix after elementwise percent, got {other:?}"),
         }
     }
 

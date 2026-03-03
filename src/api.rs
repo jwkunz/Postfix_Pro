@@ -1580,6 +1580,46 @@ mod tests {
     }
 
     #[test]
+    fn scalar_complex_rounding_matrix_elementwise_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(3.0, 0.0), c(4.0, 0.0), c(5.0, 0.0)],
+        });
+        api.push_real(2.0);
+        let pow_response = api.pow();
+        assert!(pow_response.ok);
+        match pow_response.state.stack.as_slice() {
+            [ApiValue::Matrix { rows, cols, data }] => {
+                assert_eq!((*rows, *cols), (1, 3));
+                assert!((data[0].re - 9.0).abs() < 1e-12);
+                assert!((data[1].re - 16.0).abs() < 1e-12);
+                assert!((data[2].re - 25.0).abs() < 1e-12);
+            }
+            other => panic!("expected matrix after elementwise pow, got {other:?}"),
+        }
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(1.2, 0.0), c(-2.5, 0.0), c(3.8, 0.0)],
+        });
+        let round_response = api.round_value();
+        assert!(round_response.ok);
+        match round_response.state.stack.as_slice() {
+            [ApiValue::Matrix { rows, cols, data }] => {
+                assert_eq!((*rows, *cols), (1, 3));
+                assert!((data[0].re - 1.0).abs() < 1e-12);
+                assert!((data[1].re + 3.0).abs() < 1e-12);
+                assert!((data[2].re - 4.0).abs() < 1e-12);
+            }
+            other => panic!("expected matrix after elementwise round, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn hermitian_and_mat_pow_work_via_api() {
         let mut api = CalculatorApi::new();
         api.push_matrix(MatrixInput {
