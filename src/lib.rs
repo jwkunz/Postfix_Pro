@@ -1324,15 +1324,22 @@ impl Calculator {
         })
     }
 
-    pub fn solve_lstsq(&mut self) -> Result<(), CalcError> {
-        self.apply_binary_op(|left, right| match (left, right) {
-            (Value::Matrix(a), Value::Matrix(b)) => {
-                Ok(Value::Matrix(Self::matrix_solve_lstsq(a, b)?))
+    pub fn solve_lstsq(&mut self) -> Result<Option<String>, CalcError> {
+        self.require_stack_len(2)?;
+        let len = self.state.stack.len();
+        let (a, b) = match (self.state.stack.get(len - 2), self.state.stack.get(len - 1)) {
+            (Some(Value::Matrix(a)), Some(Value::Matrix(b))) => (a.clone(), b.clone()),
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "solve_lstsq requires two matrix operands (A then B)".to_string(),
+                ));
             }
-            _ => Err(CalcError::TypeMismatch(
-                "solve_lstsq requires two matrix operands (A then B)".to_string(),
-            )),
-        })
+        };
+
+        let (x, warning) = Self::matrix_solve_lstsq(&a, &b)?;
+        self.state.stack.truncate(len - 2);
+        self.state.stack.push(Value::Matrix(x));
+        Ok(warning)
     }
 
     pub fn dot(&mut self) -> Result<(), CalcError> {
@@ -2732,7 +2739,7 @@ impl Calculator {
         )
     }
 
-    fn matrix_solve_lstsq(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+    fn matrix_solve_lstsq(a: &Matrix, b: &Matrix) -> Result<(Matrix, Option<String>), CalcError> {
         if a.rows != b.rows {
             return Err(CalcError::DimensionMismatch {
                 expected: a.rows,
@@ -2742,14 +2749,40 @@ impl Calculator {
 
         let a_dm = Self::matrix_to_dmatrix(a);
         let b_dm = Self::matrix_to_dmatrix(b);
-        let svd = a_dm.svd(true, true);
-        let pinv = svd.pseudo_inverse(1e-12).map_err(|_| {
+        let svd = a_dm.clone().svd(true, true);
+        let max_sigma = svd.singular_values.iter().copied().fold(0.0_f64, f64::max);
+        let eps = 1e-12;
+        let rank = if max_sigma <= eps {
+            0
+        } else {
+            let threshold = max_sigma * eps;
+            svd.singular_values
+                .iter()
+                .filter(|&&sigma| sigma > threshold)
+                .count()
+        };
+        let full_rank = rank == a.rows.min(a.cols);
+
+        let pinv = svd.pseudo_inverse(eps).map_err(|_| {
             CalcError::SingularMatrix(
                 "solve_lstsq failed: could not compute pseudoinverse".to_string(),
             )
         })?;
         let x = pinv * b_dm;
-        Ok(Self::dmatrix_to_matrix(&x))
+        let residual = a_dm * x.clone() - Self::matrix_to_dmatrix(b);
+        let residual_norm = residual.norm();
+
+        let warning = if full_rank {
+            Some(format!("LSTSQ residual norm: {:.6e}", residual_norm))
+        } else {
+            Some(format!(
+                "LSTSQ warning: rank-deficient system (rank {rank}/{}); returned minimum-norm pseudoinverse solution. Residual norm: {:.6e}",
+                a.rows.min(a.cols),
+                residual_norm
+            ))
+        };
+
+        Ok((Self::dmatrix_to_matrix(&x), warning))
     }
 
     fn require_same_shape(a: &Matrix, b: &Matrix, operation: &str) -> Result<(), CalcError> {
@@ -3772,9 +3805,9 @@ mod tests {
         calc.push_value(Value::Matrix(matrix(3, 2, &[1.0, 0.0, 0.0, 1.0, 1.0, 1.0])));
         calc.push_value(Value::Matrix(matrix(3, 1, &[1.0, 2.0, 3.0])));
 
-        let result = calc.solve_lstsq();
+        let warning = calc.solve_lstsq().expect("lstsq should succeed");
 
-        assert_eq!(result, Ok(()));
+        assert!(warning.is_some());
         match calc.state().stack.last() {
             Some(Value::Matrix(actual)) => {
                 let expected = matrix(2, 1, &[1.0, 2.0]);
@@ -3782,6 +3815,21 @@ mod tests {
             }
             other => panic!("unexpected stack value: {other:?}"),
         }
+    }
+
+    #[test]
+    fn solve_lstsq_reports_rank_deficiency_warning() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(3, 2, &[1.0, 2.0, 2.0, 4.0, 3.0, 6.0])));
+        calc.push_value(Value::Matrix(matrix(3, 1, &[1.0, 2.0, 3.0])));
+
+        let warning = calc.solve_lstsq().expect("lstsq should succeed");
+
+        assert!(warning.is_some());
+        assert!(
+            warning.expect("warning text").contains("rank-deficient"),
+            "expected rank-deficient warning"
+        );
     }
 
     #[test]

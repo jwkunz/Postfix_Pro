@@ -45,6 +45,8 @@ Stack labels:
   - press `Apply` to regenerate matrix text with that size
 - `Solve A*x=B`: solve linear system using top two matrices
 - `LSTSQ Solve`: least-squares solve using Moore-Penrose pseudoinverse (`x = A^+ * B`, equivalent to normal-equation solution with pseudoinverse handling)
+  - returns a status message with residual norm
+  - warns when system is rank-deficient and reports that a minimum-norm solution was returned
 - `det`: determinant of top matrix
 - `trace`: trace of top matrix
 - `transpose`: transpose top matrix

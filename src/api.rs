@@ -484,8 +484,15 @@ impl CalculatorApi {
     }
 
     pub fn solve_lstsq(&mut self) -> ApiResponse {
-        let result = self.calculator.solve_lstsq();
-        self.wrap(result)
+        match self.calculator.solve_lstsq() {
+            Ok(warning) => self.success_with_warning(warning),
+            Err(error) => ApiResponse {
+                ok: false,
+                state: self.snapshot(),
+                error: Some(to_api_error(error)),
+                warning: None,
+            },
+        }
     }
 
     pub fn dot(&mut self) -> ApiResponse {
@@ -1582,6 +1589,14 @@ mod tests {
 
         let response = api.solve_lstsq();
         assert!(response.ok);
+        assert!(response.warning.is_some());
+        assert!(
+            response
+                .warning
+                .as_ref()
+                .expect("warning text")
+                .contains("residual norm")
+        );
         match response.state.stack.as_slice() {
             [ApiValue::Matrix { rows, cols, data }] => {
                 assert_eq!((*rows, *cols), (2, 1));
