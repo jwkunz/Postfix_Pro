@@ -213,6 +213,12 @@
       width: 72px;
     }
 
+    .stack-summary {
+      min-height: 18px;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
     .stack {
       margin: 0;
       padding: 0;
@@ -600,8 +606,9 @@
       <h2 class="stack-title">Stack</h2>
       <div class="stack-controls">
         <label for="stack-visible-count">Visible</label>
-        <input id="stack-visible-count" type="number" min="1" max="64" step="1" value="16" aria-label="Visible stack frames">
+        <input id="stack-visible-count" type="number" min="1" max="64" step="1" value="4" aria-label="Visible stack frames">
       </div>
+      <p id="stack-summary" class="hint stack-summary"></p>
       <ol id="stack-list" class="stack"></ol>
       <p class="hint" id="runtime-hint">
         Loading WASM runtime...
@@ -873,6 +880,7 @@
     const angleIndicator = document.getElementById("angle-indicator");
     const stackList = document.getElementById("stack-list");
     const stackVisibleCountInput = document.getElementById("stack-visible-count");
+    const stackSummary = document.getElementById("stack-summary");
     const runtimeHint = document.getElementById("runtime-hint");
     const keypad = document.getElementById("keypad");
     const matrixAInput = document.getElementById("matrix-a-input");
@@ -908,7 +916,7 @@
     let lastState = null;
     let pendingCommand = null;
     let hypMode = false;
-    let visibleStackFrames = 16;
+    let visibleStackFrames = 4;
     const stackRoleLabels = new Map();
     const decompositionRoleMap = {
       qr: ["Q", "R"],
@@ -983,21 +991,19 @@
       const bottomFirst = [...(state.stack || [])];
       const startIndex = Math.max(0, bottomFirst.length - visibleStackFrames);
       const visibleValues = bottomFirst.slice(startIndex);
-      if (startIndex > 0) {
-        const hidden = document.createElement("li");
-        hidden.textContent = `(${startIndex} hidden below)`;
-        stackList.append(hidden);
-      }
-      visibleValues.forEach((value, idx) => {
-        const actualIdx = startIndex + idx;
+      const hiddenCount = startIndex;
+      stackSummary.textContent = `showing ${visibleStackFrames} frames (${hiddenCount} hidden)`;
+      for (let slot = 0; slot < visibleStackFrames; slot += 1) {
+        const value = visibleValues[slot];
+        const actualIdx = startIndex + slot;
         const li = document.createElement("li");
-        if (actualIdx === bottomFirst.length - 1) {
+        if (value && actualIdx === bottomFirst.length - 1) {
           li.classList.add("top");
         }
         const stackIndex = document.createElement("span");
         stackIndex.className = "idx";
-        stackIndex.textContent = actualIdx === bottomFirst.length - 1 ? "T" : `#${actualIdx}`;
-        const role = stackRoleLabels.get(actualIdx);
+        stackIndex.textContent = value ? (actualIdx === bottomFirst.length - 1 ? "T" : `#${actualIdx}`) : "--";
+        const role = value ? stackRoleLabels.get(actualIdx) : null;
         if (role) {
           const roleBadge = document.createElement("span");
           roleBadge.className = "stack-role";
@@ -1005,13 +1011,8 @@
           stackIndex.appendChild(roleBadge);
         }
         const val = document.createElement("span");
-        val.textContent = formatApiValue(value);
+        val.textContent = value ? formatApiValue(value) : "null";
         li.append(stackIndex, val);
-        stackList.append(li);
-      });
-      if (!bottomFirst.length) {
-        const li = document.createElement("li");
-        li.textContent = "(empty)";
         stackList.append(li);
       }
     }

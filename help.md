@@ -11,6 +11,7 @@ Stack labels:
 - `T`: top of stack
 - `#n`: lower stack positions
 - `Visible` dial (1-64): controls how many top stack frames are shown; hidden values remain on the stack
+- Stack panel size is fixed to the selected visible-frame count; empty frames render as `null`
 
 ## Scalar Keypad
 
