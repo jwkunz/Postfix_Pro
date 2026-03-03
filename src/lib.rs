@@ -305,6 +305,28 @@ impl Calculator {
         })
     }
 
+    pub fn hadamard_mul(&mut self) -> Result<(), CalcError> {
+        self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => {
+                Ok(Value::Matrix(Self::matrix_hadamard_mul(a, b)?))
+            }
+            _ => Err(CalcError::TypeMismatch(
+                "HadMul requires two matrix operands of equal shape".to_string(),
+            )),
+        })
+    }
+
+    pub fn hadamard_div(&mut self) -> Result<(), CalcError> {
+        self.apply_binary_op(|left, right| match (left, right) {
+            (Value::Matrix(a), Value::Matrix(b)) => {
+                Ok(Value::Matrix(Self::matrix_hadamard_div(a, b)?))
+            }
+            _ => Err(CalcError::TypeMismatch(
+                "HadDiv requires two matrix operands of equal shape".to_string(),
+            )),
+        })
+    }
+
     pub fn sqrt(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Real(v) if *v < 0.0 => Err(CalcError::DomainError(
@@ -1510,6 +1532,32 @@ impl Calculator {
         Matrix::new(a.rows, b.cols, out)
     }
 
+    fn matrix_hadamard_mul(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+        Self::require_same_shape(a, b, "HadMul")?;
+        let data = a
+            .data
+            .iter()
+            .zip(&b.data)
+            .map(|(lhs, rhs)| {
+                Self::from_complex64(Self::to_complex64(*lhs) * Self::to_complex64(*rhs))
+            })
+            .collect::<Vec<_>>();
+        Matrix::new(a.rows, a.cols, data)
+    }
+
+    fn matrix_hadamard_div(a: &Matrix, b: &Matrix) -> Result<Matrix, CalcError> {
+        Self::require_same_shape(a, b, "HadDiv")?;
+        let mut data = Vec::with_capacity(a.data.len());
+        for (lhs, rhs) in a.data.iter().zip(&b.data) {
+            let denom = Self::to_complex64(*rhs);
+            if denom.norm() == 0.0 {
+                return Err(CalcError::DivideByZero);
+            }
+            data.push(Self::from_complex64(Self::to_complex64(*lhs) / denom));
+        }
+        Matrix::new(a.rows, a.cols, data)
+    }
+
     fn matrix_scalar_mul(matrix: &Matrix, scalar: Complex) -> Matrix {
         let scalar = Self::to_complex64(scalar);
         let data = matrix
@@ -2587,6 +2635,29 @@ mod tests {
         assert_eq!(
             calc.state().stack,
             vec![Value::Matrix(matrix(2, 2, &[6.0, 8.0, 10.0, 12.0]))]
+        );
+    }
+
+    #[test]
+    fn hadamard_mul_and_div() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[1.0, 2.0, 3.0])));
+        calc.push_value(Value::Matrix(matrix(1, 3, &[4.0, 5.0, 6.0])));
+
+        assert_eq!(calc.hadamard_mul(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(1, 3, &[4.0, 10.0, 18.0]))]
+        );
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(1, 3, &[8.0, 10.0, 18.0])));
+        calc.push_value(Value::Matrix(matrix(1, 3, &[2.0, 5.0, 3.0])));
+
+        assert_eq!(calc.hadamard_div(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(1, 3, &[4.0, 2.0, 6.0]))]
         );
     }
 

@@ -233,6 +233,16 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn hadamard_mul(&mut self) -> ApiResponse {
+        let result = self.calculator.hadamard_mul();
+        self.wrap(result)
+    }
+
+    pub fn hadamard_div(&mut self) -> ApiResponse {
+        let result = self.calculator.hadamard_div();
+        self.wrap(result)
+    }
+
     pub fn sqrt(&mut self) -> ApiResponse {
         let result = self.calculator.sqrt();
         self.wrap(result)
@@ -798,6 +808,16 @@ mod wasm {
             serde_json::to_string(&self.inner.div()).expect("response serialization should succeed")
         }
 
+        pub fn hadamard_mul(&mut self) -> String {
+            serde_json::to_string(&self.inner.hadamard_mul())
+                .expect("response serialization should succeed")
+        }
+
+        pub fn hadamard_div(&mut self) -> String {
+            serde_json::to_string(&self.inner.hadamard_div())
+                .expect("response serialization should succeed")
+        }
+
         pub fn sqrt(&mut self) -> String {
             serde_json::to_string(&self.inner.sqrt())
                 .expect("response serialization should succeed")
@@ -1190,6 +1210,41 @@ mod tests {
         assert!(response.ok);
         assert_eq!(response.error, None);
         assert_eq!(response.state.stack, vec![ApiValue::Real { value: 5.0 }]);
+    }
+
+    #[test]
+    fn hadamard_ops_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0)],
+        });
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(4.0, 0.0), c(5.0, 0.0), c(6.0, 0.0)],
+        });
+
+        let mul_response = api.hadamard_mul();
+        assert!(mul_response.ok);
+        assert_eq!(mul_response.state.stack.len(), 1);
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(8.0, 0.0), c(10.0, 0.0), c(18.0, 0.0)],
+        });
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(2.0, 0.0), c(5.0, 0.0), c(3.0, 0.0)],
+        });
+
+        let div_response = api.hadamard_div();
+        assert!(div_response.ok);
+        assert_eq!(div_response.state.stack.len(), 1);
     }
 
     #[test]
