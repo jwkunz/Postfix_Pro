@@ -2497,21 +2497,6 @@ mod tests {
         }
     }
 
-    fn matrix_mul_real(lhs: &Matrix, rhs: &Matrix) -> Matrix {
-        assert_eq!(lhs.cols, rhs.rows);
-        let mut out = vec![Complex { re: 0.0, im: 0.0 }; lhs.rows * rhs.cols];
-        for row in 0..lhs.rows {
-            for col in 0..rhs.cols {
-                let mut sum = 0.0;
-                for k in 0..lhs.cols {
-                    sum += lhs.data[row * lhs.cols + k].re * rhs.data[k * rhs.cols + col].re;
-                }
-                out[row * rhs.cols + col] = Complex { re: sum, im: 0.0 };
-            }
-        }
-        Matrix::new(lhs.rows, rhs.cols, out).expect("valid product")
-    }
-
     #[test]
     fn enter_pushes_real_and_clears_entry() {
         let mut calc = Calculator::new();
@@ -3171,42 +3156,50 @@ mod tests {
     #[test]
     fn qr_and_lu_decompose() {
         let mut calc = Calculator::new();
-        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+        let original_qr = matrix(2, 2, &[1.0, 2.0, 3.0, 4.0]);
+        calc.push_value(Value::Matrix(original_qr.clone()));
 
         assert_eq!(calc.qr(), Ok(()));
         match calc.state().stack.as_slice() {
             [Value::Matrix(q), Value::Matrix(r)] => {
-                let a11 = q.data[0].re * r.data[0].re + q.data[1].re * r.data[2].re;
-                let a12 = q.data[0].re * r.data[1].re + q.data[1].re * r.data[3].re;
-                let a21 = q.data[2].re * r.data[0].re + q.data[3].re * r.data[2].re;
-                let a22 = q.data[2].re * r.data[1].re + q.data[3].re * r.data[3].re;
-                assert_real_close(a11, 1.0, 1e-10);
-                assert_real_close(a12, 2.0, 1e-10);
-                assert_real_close(a21, 3.0, 1e-10);
-                assert_real_close(a22, 4.0, 1e-10);
+                let reconstructed = Calculator::matrix_mul(q, r).expect("q*r");
+                assert_matrix_close(&reconstructed, &original_qr, 1e-10);
             }
             other => panic!("expected Q and R on stack, got {other:?}"),
         }
 
         calc.clear_all();
-        calc.push_value(Value::Matrix(matrix(2, 2, &[4.0, 3.0, 6.0, 3.0])));
+        let original_lu = matrix(2, 2, &[4.0, 3.0, 6.0, 3.0]);
+        calc.push_value(Value::Matrix(original_lu.clone()));
         assert_eq!(calc.lu(), Ok(()));
         match calc.state().stack.as_slice() {
             [Value::Matrix(p), Value::Matrix(l), Value::Matrix(u)] => {
-                let pa11 = p.data[0].re * 4.0 + p.data[1].re * 6.0;
-                let pa12 = p.data[0].re * 3.0 + p.data[1].re * 3.0;
-                let pa21 = p.data[2].re * 4.0 + p.data[3].re * 6.0;
-                let pa22 = p.data[2].re * 3.0 + p.data[3].re * 3.0;
+                let pa = Calculator::matrix_mul(p, &original_lu).expect("p*a");
+                let lu = Calculator::matrix_mul(l, u).expect("l*u");
+                assert_matrix_close(&pa, &lu, 1e-10);
+            }
+            other => panic!("expected P, L and U on stack, got {other:?}"),
+        }
 
-                let lu11 = l.data[0].re * u.data[0].re + l.data[1].re * u.data[2].re;
-                let lu12 = l.data[0].re * u.data[1].re + l.data[1].re * u.data[3].re;
-                let lu21 = l.data[2].re * u.data[0].re + l.data[3].re * u.data[2].re;
-                let lu22 = l.data[2].re * u.data[1].re + l.data[3].re * u.data[3].re;
-
-                assert_real_close(pa11, lu11, 1e-10);
-                assert_real_close(pa12, lu12, 1e-10);
-                assert_real_close(pa21, lu21, 1e-10);
-                assert_real_close(pa22, lu22, 1e-10);
+        calc.clear_all();
+        let complex_lu = Matrix::new(
+            2,
+            2,
+            vec![
+                Complex { re: 1.0, im: 1.0 },
+                Complex { re: 2.0, im: -0.5 },
+                Complex { re: 0.5, im: 0.0 },
+                Complex { re: 3.0, im: 2.0 },
+            ],
+        )
+        .expect("valid matrix");
+        calc.push_value(Value::Matrix(complex_lu.clone()));
+        assert_eq!(calc.lu(), Ok(()));
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(p), Value::Matrix(l), Value::Matrix(u)] => {
+                let pa = Calculator::matrix_mul(p, &complex_lu).expect("p*a");
+                let lu = Calculator::matrix_mul(l, u).expect("l*u");
+                assert_matrix_close(&pa, &lu, 1e-8);
             }
             other => panic!("expected P, L and U on stack, got {other:?}"),
         }
@@ -3221,8 +3214,8 @@ mod tests {
         assert_eq!(calc.svd(), Ok(()));
         match calc.state().stack.as_slice() {
             [Value::Matrix(u), Value::Matrix(s), Value::Matrix(vt)] => {
-                let us = matrix_mul_real(u, s);
-                let reconstructed = matrix_mul_real(&us, vt);
+                let us = Calculator::matrix_mul(u, s).expect("u*s");
+                let reconstructed = Calculator::matrix_mul(&us, vt).expect("(u*s)*vt");
                 assert_matrix_close(&reconstructed, &original, 1e-8);
             }
             other => panic!("expected U, S and Vt on stack, got {other:?}"),
@@ -3276,9 +3269,34 @@ mod tests {
         match calc.state().stack.as_slice() {
             [Value::Matrix(v), Value::Matrix(d)] => {
                 let v_inv = Calculator::matrix_inverse(v).expect("invertible eigenvectors");
-                let vd = matrix_mul_real(v, d);
-                let reconstructed = matrix_mul_real(&vd, &v_inv);
+                let vd = Calculator::matrix_mul(v, d).expect("v*d");
+                let reconstructed = Calculator::matrix_mul(&vd, &v_inv).expect("(v*d)*v^-1");
                 assert_matrix_close(&reconstructed, &diagonal, 1e-8);
+            }
+            other => panic!("expected V and D on stack, got {other:?}"),
+        }
+
+        calc.clear_all();
+        let complex_diagonal = Matrix::new(
+            2,
+            2,
+            vec![
+                Complex { re: 2.0, im: 1.0 },
+                Complex { re: 0.0, im: 0.0 },
+                Complex { re: 0.0, im: 0.0 },
+                Complex { re: -1.0, im: 0.5 },
+            ],
+        )
+        .expect("valid matrix");
+        calc.push_value(Value::Matrix(complex_diagonal.clone()));
+        let warning = calc.evd().expect("evd should succeed");
+        assert!(warning.is_none());
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(v), Value::Matrix(d)] => {
+                let v_inv = Calculator::matrix_inverse(v).expect("invertible eigenvectors");
+                let vd = Calculator::matrix_mul(v, d).expect("v*d");
+                let reconstructed = Calculator::matrix_mul(&vd, &v_inv).expect("(v*d)*v^-1");
+                assert_matrix_close(&reconstructed, &complex_diagonal, 1e-8);
             }
             other => panic!("expected V and D on stack, got {other:?}"),
         }

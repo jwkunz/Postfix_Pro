@@ -57,8 +57,8 @@ Stack labels:
 - `exp(mat)`: matrix exponential of top square matrix (`e^A`)
 - `herm`: Hermitian (conjugate transpose) of top matrix
 - `mat x^y`: integer matrix power (push matrix, then integer exponent, then press `MatPow`)
-- `QR`: QR decomposition; replaces top matrix with `Q` and pushes `R`
-- `LU`: LU decomposition with partial pivoting; replaces top matrix with `P` and pushes `L`, then `U` (so `P*A = L*U`)
+- `QR`: QR decomposition (supports complex matrices); replaces top matrix with `Q` and pushes `R`
+- `LU`: LU decomposition with partial pivoting (supports complex matrices); replaces top matrix with `P` and pushes `L`, then `U` (so `P*A = L*U`)
 - `SVD`: singular value decomposition (supports complex matrices); replaces top matrix with `U` and pushes `S`, then `Vt`
 - `EVD`: eigendecomposition; replaces top matrix with `V` and pushes `D`. If exact diagonalization is unavailable, returns Schur form (`Q`, `T`) with a warning.
 - Decomposition outputs are tagged in the stack view as `Q/R`, `P/L/U`, `U/S/Vt`, and `V/D` for quick identification.

@@ -1635,6 +1635,26 @@ mod tests {
         let lu_response = api.lu();
         assert!(lu_response.ok);
         assert_eq!(lu_response.state.stack.len(), 3);
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(1.0, 1.0), c(2.0, -0.5), c(0.5, 0.0), c(3.0, 2.0)],
+        });
+        let complex_qr = api.qr();
+        assert!(complex_qr.ok);
+        assert_eq!(complex_qr.state.stack.len(), 2);
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(1.0, 1.0), c(2.0, -0.5), c(0.5, 0.0), c(3.0, 2.0)],
+        });
+        let complex_lu = api.lu();
+        assert!(complex_lu.ok);
+        assert_eq!(complex_lu.state.stack.len(), 3);
     }
 
     #[test]
@@ -1683,6 +1703,18 @@ mod tests {
     #[test]
     fn evd_work_via_api_with_warning() {
         let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(2.0, 1.0), c(0.0, 0.0), c(0.0, 0.0), c(-1.0, 0.5)],
+        });
+
+        let exact_response = api.evd();
+        assert!(exact_response.ok);
+        assert_eq!(exact_response.state.stack.len(), 2);
+        assert!(exact_response.warning.is_none());
+
+        api.clear_all();
         api.push_matrix(MatrixInput {
             rows: 2,
             cols: 2,
