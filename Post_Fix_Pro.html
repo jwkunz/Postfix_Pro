@@ -671,6 +671,7 @@
           <button class="fn" data-action="qr">QR</button>
           <button class="fn" data-action="lu">LU</button>
           <button class="fn" data-action="svd">SVD</button>
+          <button class="fn" data-action="evd">EVD</button>
         </div>
         <div class="matrix-presets">
           <button class="fn" id="preset-a-btn">Preset A 2x2</button>
@@ -960,7 +961,11 @@
       }
       const response = parseResponse(wasmCalc[methodName](...args));
       renderState(response.state);
-      setError(response.ok ? "" : response.error?.message || "operation failed");
+      if (response.ok) {
+        setError(response.warning || "");
+      } else {
+        setError(response.error?.message || "operation failed");
+      }
       return response;
     }
 

@@ -55,6 +55,7 @@ pub struct ApiResponse {
     pub ok: bool,
     pub state: ApiState,
     pub error: Option<ApiError>,
+    pub warning: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -138,6 +139,7 @@ impl CalculatorApi {
                 ok: false,
                 state: self.snapshot(),
                 error: Some(to_api_error(error)),
+                warning: None,
             },
         }
     }
@@ -506,6 +508,18 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn evd(&mut self) -> ApiResponse {
+        match self.calculator.evd() {
+            Ok(warning) => self.success_with_warning(warning),
+            Err(error) => ApiResponse {
+                ok: false,
+                state: self.snapshot(),
+                error: Some(to_api_error(error)),
+                warning: None,
+            },
+        }
+    }
+
     pub fn mean(&mut self) -> ApiResponse {
         let result = self.calculator.mean();
         self.wrap(result)
@@ -561,6 +575,16 @@ impl CalculatorApi {
             ok: true,
             state: self.snapshot(),
             error: None,
+            warning: None,
+        }
+    }
+
+    fn success_with_warning(&self, warning: Option<String>) -> ApiResponse {
+        ApiResponse {
+            ok: true,
+            state: self.snapshot(),
+            error: None,
+            warning,
         }
     }
 
@@ -571,6 +595,7 @@ impl CalculatorApi {
                 ok: false,
                 state: self.snapshot(),
                 error: Some(to_api_error(error)),
+                warning: None,
             },
         }
     }
@@ -1003,6 +1028,7 @@ mod wasm {
                         code: "invalid_input".to_string(),
                         message: format!("invalid matrix payload: {error}"),
                     }),
+                    warning: None,
                 })
                 .expect("response serialization should succeed"),
             }
@@ -1067,6 +1093,10 @@ mod wasm {
 
         pub fn svd(&mut self) -> String {
             serde_json::to_string(&self.inner.svd()).expect("response serialization should succeed")
+        }
+
+        pub fn evd(&mut self) -> String {
+            serde_json::to_string(&self.inner.evd()).expect("response serialization should succeed")
         }
 
         pub fn mean(&mut self) -> String {
@@ -1380,6 +1410,21 @@ mod tests {
             }
             other => panic!("expected three matrices from svd, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn evd_work_via_api_with_warning() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(1.0, 0.0), c(1.0, 0.0), c(0.0, 0.0), c(1.0, 0.0)],
+        });
+
+        let response = api.evd();
+        assert!(response.ok);
+        assert_eq!(response.state.stack.len(), 2);
+        assert!(response.warning.is_some());
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use nalgebra::linalg::Schur;
 use nalgebra::{DMatrix, DVector, Vector3};
 use num_complex::Complex64;
 
@@ -1150,6 +1151,24 @@ impl Calculator {
         Ok(())
     }
 
+    pub fn evd(&mut self) -> Result<Option<String>, CalcError> {
+        self.require_stack_len(1)?;
+        let len = self.state.stack.len();
+        let matrix = match self.state.stack.get(len - 1) {
+            Some(Value::Matrix(matrix)) => matrix.clone(),
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "EVD requires a matrix value".to_string(),
+                ));
+            }
+        };
+
+        let (v, d, warning) = Self::matrix_evd(&matrix)?;
+        self.state.stack[len - 1] = Value::Matrix(v);
+        self.state.stack.push(Value::Matrix(d));
+        Ok(warning)
+    }
+
     pub fn mean(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Real(Self::matrix_mean(matrix)?)),
@@ -1827,6 +1846,38 @@ impl Calculator {
             Self::real_dmatrix_to_matrix(&u),
             Self::real_dmatrix_to_matrix(&s),
             Self::real_dmatrix_to_matrix(&vt),
+        ))
+    }
+
+    fn matrix_evd(matrix: &Matrix) -> Result<(Matrix, Matrix, Option<String>), CalcError> {
+        Self::require_square(matrix, "EVD")?;
+
+        let a = Self::matrix_to_dmatrix(matrix);
+        let schur = Schur::new(a.clone());
+        let (q, t) = schur.unpack();
+
+        let mut off_diag_max = 0.0_f64;
+        for row in 0..t.nrows() {
+            for col in 0..t.ncols() {
+                if row != col {
+                    off_diag_max = off_diag_max.max(t[(row, col)].norm());
+                }
+            }
+        }
+
+        let warning = if off_diag_max > 1e-8 {
+            Some(
+                "EVD warning: exact diagonalization unavailable; returned Schur form (Q, T) with A = Q*T*Q^-1."
+                    .to_string(),
+            )
+        } else {
+            None
+        };
+
+        Ok((
+            Self::dmatrix_to_matrix(&q),
+            Self::dmatrix_to_matrix(&t),
+            warning,
         ))
     }
 
@@ -2815,6 +2866,31 @@ mod tests {
             }
             other => panic!("expected U, S and Vt on stack, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn evd_decompose_and_warning_path() {
+        let mut calc = Calculator::new();
+        let diagonal = matrix(2, 2, &[2.0, 0.0, 0.0, 3.0]);
+        calc.push_value(Value::Matrix(diagonal.clone()));
+
+        let warning = calc.evd().expect("evd should succeed");
+        assert!(warning.is_none());
+        match calc.state().stack.as_slice() {
+            [Value::Matrix(v), Value::Matrix(d)] => {
+                let v_inv = Calculator::matrix_inverse(v).expect("invertible eigenvectors");
+                let vd = matrix_mul_real(v, d);
+                let reconstructed = matrix_mul_real(&vd, &v_inv);
+                assert_matrix_close(&reconstructed, &diagonal, 1e-8);
+            }
+            other => panic!("expected V and D on stack, got {other:?}"),
+        }
+
+        calc.clear_all();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 1.0, 0.0, 1.0])));
+        let warning = calc.evd().expect("evd should return fallback");
+        assert!(warning.is_some());
+        assert_eq!(calc.state().stack.len(), 2);
     }
 
     #[test]

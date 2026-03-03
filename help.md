@@ -45,6 +45,7 @@ Stack labels:
 - `QR`: QR decomposition; replaces top matrix with `Q` and pushes `R`
 - `LU`: LU decomposition with partial pivoting; replaces top matrix with `P` and pushes `L`, then `U` (so `P*A = L*U`)
 - `SVD`: singular value decomposition for real-valued matrices; replaces top matrix with `U` and pushes `S`, then `Vt`
+- `EVD`: eigendecomposition; replaces top matrix with `V` and pushes `D`. If exact diagonalization is unavailable, returns Schur form (`Q`, `T`) with a warning.
 - `Preset A 2x2`, `Preset B vec`: convenience templates
 - `Push I(n)`: push identity matrix of size `n`
 
