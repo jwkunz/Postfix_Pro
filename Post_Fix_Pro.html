@@ -674,6 +674,7 @@
         <button class="fn" id="import-csv-btn">Import CSV</button>
         <button class="fn" id="export-csv-btn">Export CSV</button>
         <button class="fn" id="stack-vec-btn">stack vec</button>
+        <button class="fn" id="ravel-btn">ravel</button>
         <input id="matrix-csv-input" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import matrix CSV">
 
       </div>
@@ -879,6 +880,7 @@
     const importCsvBtn = document.getElementById("import-csv-btn");
     const exportCsvBtn = document.getElementById("export-csv-btn");
     const matrixCsvInput = document.getElementById("matrix-csv-input");
+    const ravelBtn = document.getElementById("ravel-btn");
     const identitySizeInput = document.getElementById("identity-size-input");
     const pushIdentityBtn = document.getElementById("push-identity-btn");
     const complexEntryMode = document.getElementById("complex-entry-mode");
@@ -1797,6 +1799,12 @@
       if (!wasmCalc) return;
       if (!commitEntryIfNeeded()) return;
       call("stack_vec");
+    });
+
+    ravelBtn.addEventListener("click", () => {
+      if (!wasmCalc) return;
+      if (!commitEntryIfNeeded()) return;
+      call("ravel");
     });
 
     pushComplexBtn.addEventListener("click", () => {

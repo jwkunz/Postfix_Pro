@@ -595,6 +595,11 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn ravel(&mut self) -> ApiResponse {
+        let result = self.calculator.ravel();
+        self.wrap(result)
+    }
+
     pub fn memory_store(&mut self, register: usize) -> ApiResponse {
         let result = self.calculator.memory_store(register);
         self.wrap(result)
@@ -1214,6 +1219,11 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn ravel(&mut self) -> String {
+            serde_json::to_string(&self.inner.ravel())
+                .expect("response serialization should succeed")
+        }
+
         pub fn memory_store(&mut self, register: usize) -> String {
             serde_json::to_string(&self.inner.memory_store(register))
                 .expect("response serialization should succeed")
@@ -1446,6 +1456,45 @@ mod tests {
                 cols: 1,
                 data: vec![c(1.0, 0.0), c(2.0, -1.0), c(3.5, 0.0)]
             }]
+        );
+    }
+
+    #[test]
+    fn ravel_matrix_and_vector_work_via_api() {
+        let mut api = CalculatorApi::new();
+        api.push_matrix(MatrixInput {
+            rows: 2,
+            cols: 2,
+            data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)],
+        });
+
+        let matrix_response = api.ravel();
+        assert!(matrix_response.ok);
+        assert_eq!(
+            matrix_response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 4,
+                cols: 1,
+                data: vec![c(1.0, 0.0), c(2.0, 0.0), c(3.0, 0.0), c(4.0, 0.0)]
+            }]
+        );
+
+        api.clear_all();
+        api.push_matrix(MatrixInput {
+            rows: 1,
+            cols: 3,
+            data: vec![c(1.0, 0.0), c(2.0, -1.0), c(3.0, 0.0)],
+        });
+
+        let vector_response = api.ravel();
+        assert!(vector_response.ok);
+        assert_eq!(
+            vector_response.state.stack,
+            vec![
+                ApiValue::Real { value: 1.0 },
+                ApiValue::Complex { re: 2.0, im: -1.0 },
+                ApiValue::Real { value: 3.0 },
+            ]
         );
     }
 

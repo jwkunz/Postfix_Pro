@@ -37,6 +37,7 @@ Stack labels:
 
 - `Push`: parse matrix text and push to stack (use repeatedly to push multiple matrices)
 - `stack vec`: convert all scalar stack values into one column vector matrix
+- `ravel`: if top is a matrix, row-scan into one long column vector; if top is a vector (`Nx1` or `1xN`), unpack entries to stack scalars
 - `Import CSV -> A`: load a CSV file into the Matrix Entry text area and size controls
 - `Export Top CSV`: write the top-of-stack matrix to a downloadable `matrix.csv` file
 - `Size A` controls:

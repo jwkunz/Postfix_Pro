@@ -1268,6 +1268,35 @@ impl Calculator {
         Ok(())
     }
 
+    pub fn ravel(&mut self) -> Result<(), CalcError> {
+        self.require_stack_len(1)?;
+        let len = self.state.stack.len();
+        let matrix = match self.state.stack.get(len - 1) {
+            Some(Value::Matrix(matrix)) => matrix.clone(),
+            _ => {
+                return Err(CalcError::TypeMismatch(
+                    "ravel requires a matrix value".to_string(),
+                ));
+            }
+        };
+
+        if matrix.rows == 1 || matrix.cols == 1 {
+            self.state.stack.truncate(len - 1);
+            for entry in matrix.data {
+                if entry.im.abs() <= 1e-12 {
+                    self.state.stack.push(Value::Real(entry.re));
+                } else {
+                    self.state.stack.push(Value::Complex(entry));
+                }
+            }
+            Ok(())
+        } else {
+            let vector = Matrix::new(matrix.rows * matrix.cols, 1, matrix.data)?;
+            self.state.stack[len - 1] = Value::Matrix(vector);
+            Ok(())
+        }
+    }
+
     pub fn determinant(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Complex(Self::matrix_determinant(matrix)?)),
@@ -3106,6 +3135,41 @@ mod tests {
 
         assert!(matches!(result, Err(CalcError::TypeMismatch(_))));
         assert_eq!(calc.state().stack, before);
+    }
+
+    #[test]
+    fn ravel_matrix_to_vector_and_vector_to_scalar_stack() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Matrix(matrix(2, 2, &[1.0, 2.0, 3.0, 4.0])));
+
+        assert_eq!(calc.ravel(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(matrix(4, 1, &[1.0, 2.0, 3.0, 4.0]))]
+        );
+
+        calc.clear_all();
+        let complex_vector = Matrix::new(
+            1,
+            3,
+            vec![
+                Complex { re: 1.0, im: 0.0 },
+                Complex { re: 2.0, im: -1.0 },
+                Complex { re: 3.0, im: 0.0 },
+            ],
+        )
+        .expect("valid matrix");
+        calc.push_value(Value::Matrix(complex_vector));
+
+        assert_eq!(calc.ravel(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![
+                Value::Real(1.0),
+                Value::Complex(Complex { re: 2.0, im: -1.0 }),
+                Value::Real(3.0),
+            ]
+        );
     }
 
     #[test]
