@@ -683,9 +683,10 @@
         <button data-digit="1">1</button>
         <button data-digit="2">2</button>
         <button data-digit="3">3</button>
-        <button class="wide" data-digit="0">0</button>
+        <button data-digit="0">0</button>
         <button data-action="decimal">.</button>
         <button class="fn" data-action="insert-exp">EXP</button>
+        <button class="fn" data-action="undo">undo</button>
       </div>
     </section>
 
@@ -973,6 +974,7 @@
       "hadamard-div": "h div",
       "mat-exp": "exp(mat)",
       "mat-pow": "mat x^y",
+      "undo": "undo",
       "const-euler-gamma": "gamma",
       "const-psi": "ψ",
       "const-c": "c",
@@ -1692,6 +1694,10 @@
         appendEntryChar("E");
         return;
       }
+      if (action === "undo") {
+        call("undo");
+        return;
+      }
       if (action === "backspace") {
         entryBuffer = entryBuffer.slice(0, -1);
         syncEntry();
@@ -1859,7 +1865,8 @@
         variance: "variance",
         "std-dev": "std_dev",
         max: "max_value",
-        min: "min_value"
+        min: "min_value",
+        undo: "undo"
       };
       const method = opMap[action];
       if (!method) return;

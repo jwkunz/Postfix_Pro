@@ -21,6 +21,7 @@ Stack labels:
 - `C`: clear stack + entry
 - `Drop`: remove top stack value
 - `Dup`: duplicate top stack value
+- `undo`: restore the calculator to the state before the last successful operation (single-level undo)
 - `Swap`: swap top two stack values
 - `Rot`: rotate top three values
 - `+/-`: toggle sign on current entry

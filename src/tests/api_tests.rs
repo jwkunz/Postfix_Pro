@@ -18,6 +18,28 @@
     }
 
     #[test]
+    fn undo_restores_previous_successful_state() {
+        let mut api = CalculatorApi::new();
+        api.push_real(2.0);
+        api.push_real(3.0);
+        let add = api.add();
+        assert!(add.ok);
+        assert_eq!(add.state.stack, vec![ApiValue::Real { value: 5.0 }]);
+
+        let undo = api.undo();
+        assert!(undo.ok);
+        assert_eq!(
+            undo.state.stack,
+            vec![ApiValue::Real { value: 2.0 }, ApiValue::Real { value: 3.0 }]
+        );
+
+        let second_undo = api.undo();
+        assert!(!second_undo.ok);
+        let error = second_undo.error.expect("undo error expected");
+        assert_eq!(error.code, "invalid_input");
+    }
+
+    #[test]
     fn complex_real_and_imag_work_via_api() {
         let mut api = CalculatorApi::new();
         api.push_complex(ComplexInput { re: -2.0, im: 7.0 });

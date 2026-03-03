@@ -36,6 +36,7 @@ mod statistics_panel;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Calculator {
     state: CalcState,
+    undo_state: Option<CalcState>,
 }
 
 impl Default for Calculator {
@@ -57,12 +58,28 @@ impl Calculator {
                 memory: vec![None; 26],
                 rng_state: 0x9E37_79B9_7F4A_7C15,
             },
+            undo_state: None,
         }
     }
 
     /// Returns an immutable view of the current calculator state.
     pub fn state(&self) -> &CalcState {
         &self.state
+    }
+
+    /// Restores the calculator to the snapshot captured before the last
+    /// successful mutating API operation.
+    pub fn undo(&mut self) -> Result<(), CalcError> {
+        let previous = self
+            .undo_state
+            .take()
+            .ok_or(CalcError::InvalidInput("nothing to undo".to_string()))?;
+        self.state = previous;
+        Ok(())
+    }
+
+    pub(crate) fn set_undo_state(&mut self, snapshot: CalcState) {
+        self.undo_state = Some(snapshot);
     }
 
     fn apply_stat_op(
