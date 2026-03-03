@@ -650,12 +650,13 @@
       <div class="matrix-actions">
         <button class="fn" id="push-a-btn">Push</button>
         <button class="fn" id="preset-a-btn">Preset</button>
+        <button class="fn" id="stack-vec-btn">stack vec</button>
         <button class="fn" id="import-csv-btn">Import CSV -> A</button>
         <button class="fn" id="export-csv-btn">Export Top CSV</button>
         <input id="matrix-csv-input" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import matrix CSV">
         <div class="identity">
           <input id="identity-size-input" type="number" min="1" step="1" value="3" aria-label="Identity size">
-          <button class="fn" id="push-identity-btn">Push I(n)</button>
+          <button class="fn" id="push-identity-btn">Preset I(n)</button>
         </div>
       </div>
     </section>
@@ -665,9 +666,8 @@
       <div class="matrix-actions" data-advanced-actions>
         <button class="fn" data-action="dot">dot</button>
         <button class="fn" data-action="cross">cross</button>
-        <button class="fn" data-action="norm-p">norm_p</button>
         <button class="fn" data-action="diag">diag</button>
-        <button class="fn" data-action="toep">Toep</button>
+        <button class="fn" data-action="tpltz">tpltz</button>
       </div>
     </section>
 
@@ -679,11 +679,12 @@
         <button class="fn" data-action="trace">trace</button>
         <button class="fn" data-action="transpose">transpose</button>
         <button class="fn" data-action="inverse">inverse</button>
-        <button class="fn" data-action="hadamard-mul">HadMul</button>
-        <button class="fn" data-action="hadamard-div">HadDiv</button>
-        <button class="fn" data-action="mat-exp">MatExp</button>
-        <button class="fn" data-action="hermitian">Herm</button>
-        <button class="fn" data-action="mat-pow">MatPow</button>
+        <button class="fn" data-action="hadamard-mul">H mul</button>
+        <button class="fn" data-action="hadamard-div">H div</button>
+        <button class="fn" data-action="norm-p">norm_p</button>
+        <button class="fn" data-action="mat-exp">exp(mat)</button>
+        <button class="fn" data-action="hermitian">herm</button>
+        <button class="fn" data-action="mat-pow">mat x^y</button>
       </div>
     </section>
 
@@ -720,8 +721,8 @@
       <h3 class="panel-title">Trigonometry</h3>
       <div class="science-actions" data-advanced-actions>
         <button class="fn" data-action="hyp-toggle" id="hyp-toggle-btn">hyp</button>
-        <button class="fn" data-action="to-rad">to_rad</button>
-        <button class="fn" data-action="to-deg">to_deg</button>
+        <button class="fn" data-action="to-rad">to rad</button>
+        <button class="fn" data-action="to-deg">to deg</button>
         <button class="fn" data-action="atan2">atan2</button>
         <button class="fn" data-action="sin" data-hyp="sinh">sin</button>
         <button class="fn" data-action="asin" data-hyp="asinh">asin</button>
@@ -765,16 +766,17 @@
         <button class="fn" data-action="variance">variance</button>
         <button class="fn" data-action="max">max</button>
         <button class="fn" data-action="min">min</button>
+        <button class="fn" data-action="rand">ran#</button>
       </div>
     </section>
 
     <section class="panel">
       <h3 class="panel-title">Rounding</h3>
       <div class="science-actions" data-advanced-actions>
-        <button class="fn" data-action="round">rnd</button>
+        <button class="fn" data-action="round">round</button>
         <button class="fn" data-action="floor">floor</button>
         <button class="fn" data-action="ceil">ceil</button>
-        <button class="fn" data-action="dec-part">decP</button>
+        <button class="fn" data-action="dec-part">dec part</button>
       </div>
     </section>
 
@@ -783,7 +785,6 @@
       <div class="science-actions" data-advanced-actions>
         <button class="fn" data-action="pi">π</button>
         <button class="fn" data-action="e">e</button>
-        <button class="fn" data-action="rand">ran#</button>
         <button class="fn" data-action="const-euler-gamma">γ</button>
         <button class="fn" data-action="const-c">c</button>
         <button class="fn" data-action="const-mol">mol</button>
@@ -851,6 +852,7 @@
     const pushABtn = document.getElementById("push-a-btn");
     const solveBtn = document.getElementById("solve-btn");
     const presetABtn = document.getElementById("preset-a-btn");
+    const stackVecBtn = document.getElementById("stack-vec-btn");
     const importCsvBtn = document.getElementById("import-csv-btn");
     const exportCsvBtn = document.getElementById("export-csv-btn");
     const matrixCsvInput = document.getElementById("matrix-csv-input");
@@ -1368,13 +1370,24 @@
       }
     }
 
-    function pushIdentityFromInput() {
+    function presetIdentityInEntry() {
       const size = Number(identitySizeInput.value);
       if (!Number.isInteger(size) || size <= 0) {
         setError("identity size must be a positive integer");
         return;
       }
-      call("push_identity", size);
+      matrixARowsInput.value = String(size);
+      matrixAColsInput.value = String(size);
+      const rows = [];
+      for (let r = 0; r < size; r += 1) {
+        const row = [];
+        for (let c = 0; c < size; c += 1) {
+          row.push(r === c ? "1" : "0");
+        }
+        rows.push(row.join(" "));
+      }
+      matrixAInput.value = rows.join("\n");
+      setError("");
     }
 
     function parseRegisterIndex() {
@@ -1608,7 +1621,7 @@
         "hadamard-div": "hadamard_div",
         "norm-p": "norm_p",
         diag: "diag",
-        toep: "toep",
+        tpltz: "toep",
         "mat-exp": "mat_exp",
         hermitian: "hermitian",
         "mat-pow": "mat_pow",
@@ -1709,8 +1722,13 @@
     });
 
     pushIdentityBtn.addEventListener("click", () => {
+      presetIdentityInEntry();
+    });
+
+    stackVecBtn.addEventListener("click", () => {
       if (!wasmCalc) return;
-      pushIdentityFromInput();
+      if (!commitEntryIfNeeded()) return;
+      call("stack_vec");
     });
 
     pushComplexBtn.addEventListener("click", () => {

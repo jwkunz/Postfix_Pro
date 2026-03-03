@@ -580,6 +580,11 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    pub fn stack_vec(&mut self) -> ApiResponse {
+        let result = self.calculator.stack_vec();
+        self.wrap(result)
+    }
+
     pub fn memory_store(&mut self, register: usize) -> ApiResponse {
         let result = self.calculator.memory_store(register);
         self.wrap(result)
@@ -1184,6 +1189,11 @@ mod wasm {
                 .expect("response serialization should succeed")
         }
 
+        pub fn stack_vec(&mut self) -> String {
+            serde_json::to_string(&self.inner.stack_vec())
+                .expect("response serialization should succeed")
+        }
+
         pub fn memory_store(&mut self, register: usize) -> String {
             serde_json::to_string(&self.inner.memory_store(register))
                 .expect("response serialization should succeed")
@@ -1372,6 +1382,26 @@ mod tests {
                 rows: 2,
                 cols: 2,
                 data: vec![c(1.0, 0.0), c(0.0, 0.0), c(0.0, 0.0), c(1.0, 0.0)]
+            }]
+        );
+    }
+
+    #[test]
+    fn stack_vec_converts_stack_scalars_to_matrix() {
+        let mut api = CalculatorApi::new();
+        api.push_real(1.0);
+        api.push_complex(ComplexInput { re: 2.0, im: -1.0 });
+        api.push_real(3.5);
+
+        let response = api.stack_vec();
+
+        assert!(response.ok);
+        assert_eq!(
+            response.state.stack,
+            vec![ApiValue::Matrix {
+                rows: 3,
+                cols: 1,
+                data: vec![c(1.0, 0.0), c(2.0, -1.0), c(3.5, 0.0)]
             }]
         );
     }

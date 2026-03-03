@@ -29,13 +29,14 @@ Stack labels:
 ## Matrix Panels
 
 - `Matrix Builder`: Matrix Entry box, sizing, Push, CSV import/export, and preset template
-- `Vector Operators`: dot, cross, norm_p, diag, and Toep
-- `Matrix Operators`: solve, det, trace, transpose, inverse, Hadamard ops, MatExp, Herm, MatPow
+- `Vector Operators`: dot, cross, diag, and tpltz
+- `Matrix Operators`: solve, det, trace, transpose, inverse, H mul, H div, norm_p, exp(mat), herm, mat x^y
 - `Matrix Decompositions`: QR, LU, SVD, EVD
 
 ### Matrix Operations
 
 - `Push`: parse matrix text and push to stack (use repeatedly to push multiple matrices)
+- `stack vec`: convert all scalar stack values into one column vector matrix
 - `Import CSV -> A`: load a CSV file into the Matrix Entry text area and size controls
 - `Export Top CSV`: write the top-of-stack matrix to a downloadable `matrix.csv` file
 - `Size A` controls:
@@ -48,20 +49,20 @@ Stack labels:
 - `inverse`: inverse of top matrix
 - `dot`: vector dot product (supports `Nx1` and `1xN`)
 - `cross`: vector cross product (3-element vectors)
-- `HadMul`: element-wise multiplication (matrix with same-shape matrix, or matrix with scalar)
-- `HadDiv`: element-wise division (matrix by same-shape matrix, matrix/scalar, or scalar/matrix)
+- `H mul`: element-wise multiplication (matrix with same-shape matrix, or matrix with scalar)
+- `H div`: element-wise division (matrix by same-shape matrix, matrix/scalar, or scalar/matrix)
 - `norm_p`: p-norm (push matrix/vector, then push `p`, then press `norm_p`)
 - `diag`: convert vector matrix (`Nx1` or `1xN`) into a diagonal matrix
-- `Toep`: convert vector matrix (`Nx1` or `1xN`) into a Toeplitz matrix using `T[i,j] = v[|i-j|]`
-- `MatExp`: matrix exponential of top square matrix (`e^A`)
-- `Herm`: Hermitian (conjugate transpose) of top matrix
-- `MatPow`: integer matrix power (push matrix, then integer exponent, then press `MatPow`)
+- `tpltz`: convert vector matrix (`Nx1` or `1xN`) into a Toeplitz matrix using `T[i,j] = v[|i-j|]`
+- `exp(mat)`: matrix exponential of top square matrix (`e^A`)
+- `herm`: Hermitian (conjugate transpose) of top matrix
+- `mat x^y`: integer matrix power (push matrix, then integer exponent, then press `MatPow`)
 - `QR`: QR decomposition; replaces top matrix with `Q` and pushes `R`
 - `LU`: LU decomposition with partial pivoting; replaces top matrix with `P` and pushes `L`, then `U` (so `P*A = L*U`)
 - `SVD`: singular value decomposition for real-valued matrices; replaces top matrix with `U` and pushes `S`, then `Vt`
 - `EVD`: eigendecomposition; replaces top matrix with `V` and pushes `D`. If exact diagonalization is unavailable, returns Schur form (`Q`, `T`) with a warning.
 - `Preset`: convenience template
-- `Push I(n)`: push identity matrix of size `n` (from Matrix Builder panel)
+- `Preset I(n)`: fill Matrix Entry with an identity matrix template of size `n`
 
 Matrix input format:
 
@@ -87,8 +88,8 @@ Example:
 
 - `sin`, `asin`, `cos`, `acos`, `tan`, `atan`
 - `atan2`: binary operation using stack order `(y, x)`
-- `to_rad`: convert top real value degrees -> radians
-- `to_deg`: convert top real value radians -> degrees
+- `to rad`: convert top real value degrees -> radians
+- `to deg`: convert top real value radians -> degrees
 - `hyp`: toggles trig buttons to hyperbolic/inverse-hyperbolic variants:
   - `sinh`, `asinh`, `cosh`, `acosh`, `tanh`, `atanh`
 
@@ -126,16 +127,16 @@ Example:
 - `nCr`: combinations
 - `nPr`: permutations
 - `x mod y`: Euclidean remainder
-- `ran#`: push pseudo-random number in `[0, 1)`
 - `GCD`: greatest common divisor (integers)
 - `LCM`: least common multiple (integers)
-- `rnd`: round to nearest integer
+- `round`: round to nearest integer
 - `floor`: floor
 - `ceil`: ceil
-- `decP`: decimal part (`x - trunc(x)`)
+- `dec part`: decimal part (`x - trunc(x)`)
 
 ### Statistics
 
+- `ran#`: pseudo-random number in `[0, 1)`
 - `mean`: arithmetic mean of a real vector (`Nx1` or `1xN`)
 - `mode`: most frequent value in a real vector
 - `std dev`: population standard deviation of a real vector
@@ -147,7 +148,6 @@ Example:
 
 - `pi`: π
 - `e`: Euler's number
-- `ran#`: pseudo-random number in `[0, 1)`
 - `gamma`: Euler-Mascheroni constant `0.5772156649015329`
 - `c`: speed of light `299792458`
 - `mol`: Avogadro constant `6.02214076E23`

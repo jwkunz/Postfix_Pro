@@ -1049,6 +1049,33 @@ impl Calculator {
         Ok(())
     }
 
+    pub fn stack_vec(&mut self) -> Result<(), CalcError> {
+        if self.state.stack.is_empty() {
+            return Err(CalcError::InvalidInput(
+                "stack_vec requires at least one scalar value on the stack".to_string(),
+            ));
+        }
+
+        let mut data = Vec::with_capacity(self.state.stack.len());
+        for value in &self.state.stack {
+            match value {
+                Value::Real(v) => data.push(Complex { re: *v, im: 0.0 }),
+                Value::Complex(c) => data.push(*c),
+                Value::Matrix(_) => {
+                    return Err(CalcError::TypeMismatch(
+                        "stack_vec requires stack values to be real or complex scalars only"
+                            .to_string(),
+                    ));
+                }
+            }
+        }
+
+        let vector = Matrix::new(data.len(), 1, data)?;
+        self.state.stack.clear();
+        self.state.stack.push(Value::Matrix(vector));
+        Ok(())
+    }
+
     pub fn determinant(&mut self) -> Result<(), CalcError> {
         self.apply_unary_op(|value| match value {
             Value::Matrix(matrix) => Ok(Value::Complex(Self::matrix_determinant(matrix)?)),
@@ -2798,6 +2825,44 @@ mod tests {
                 &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
             ))]
         );
+    }
+
+    #[test]
+    fn stack_vec_converts_scalars_to_column_vector() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Real(1.0));
+        calc.push_value(Value::Complex(Complex { re: 2.0, im: -1.0 }));
+        calc.push_value(Value::Real(3.5));
+
+        assert_eq!(calc.stack_vec(), Ok(()));
+        assert_eq!(
+            calc.state().stack,
+            vec![Value::Matrix(
+                Matrix::new(
+                    3,
+                    1,
+                    vec![
+                        Complex { re: 1.0, im: 0.0 },
+                        Complex { re: 2.0, im: -1.0 },
+                        Complex { re: 3.5, im: 0.0 },
+                    ],
+                )
+                .expect("valid matrix")
+            )]
+        );
+    }
+
+    #[test]
+    fn stack_vec_rejects_matrix_values_and_preserves_stack() {
+        let mut calc = Calculator::new();
+        calc.push_value(Value::Real(1.0));
+        calc.push_value(Value::Matrix(matrix(1, 1, &[2.0])));
+        let before = calc.state().stack.clone();
+
+        let result = calc.stack_vec();
+
+        assert!(matches!(result, Err(CalcError::TypeMismatch(_))));
+        assert_eq!(calc.state().stack, before);
     }
 
     #[test]
