@@ -601,6 +601,18 @@
       background: #0b1020;
     }
 
+    .legal-copy {
+      display: grid;
+      gap: 12px;
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .legal-copy p {
+      margin: 0;
+    }
+
     .button-tooltip {
       position: fixed;
       z-index: 1200;
@@ -721,6 +733,7 @@
         <button class="ribbon-tab" type="button" data-ribbon-target="matrix">Matrix</button>
         <button class="ribbon-tab" type="button" data-ribbon-target="memory">Memory</button>
         <button class="ribbon-tab" type="button" data-ribbon-target="preferences">Preferences</button>
+        <button class="ribbon-tab" type="button" id="legal-ribbon-btn">Legal</button>
         <button class="ribbon-tab" type="button" id="help-ribbon-btn">Help</button>
       </nav>
 
@@ -994,11 +1007,6 @@
           <button class="fn bottom-wide" data-action="enter">enter</button>
         </div>
 
-        <section class="panel banner-panel" aria-label="Banner advertisement placeholder">
-          <div class="banner-slot">
-            <img src="./Post_Fix_Pro.png" alt="Advertisement placeholder icon">
-          </div>
-        </section>
       </section>
 
       <aside class="panel stack-panel">
@@ -1008,6 +1016,11 @@
         </div>
         <p id="stack-summary" class="stack-summary"></p>
         <ol id="stack-list" class="stack"></ol>
+        <section class="banner-panel" aria-label="Banner advertisement placeholder">
+          <div class="banner-slot">
+            <img src="./Post_Fix_Pro.png" alt="Advertisement placeholder icon">
+          </div>
+        </section>
         <div class="stack-brand">
           <img src="./Post_Fix_Pro.png" alt="Post Fix Pro logo">
           <span>Post Fix Pro</span>
@@ -1074,6 +1087,23 @@
     </div>
   </div>
 
+  <div class="modal" id="legal-modal" aria-hidden="true">
+    <div class="panel modal-dialog" role="dialog" aria-modal="true" aria-label="Legal information">
+      <div class="modal-header">
+        <span>Legal</span>
+        <button class="danger" type="button" id="legal-close-btn">close</button>
+      </div>
+      <div class="modal-body">
+        <div class="legal-copy">
+          <p>Version 5.1.0</p>
+          <p>Copyright 2026 Numerius Engineering LLC</p>
+          <p>For support contact numerius.engineering@gmail.com</p>
+          <p>Distributed under terms of the MIT License.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="button-tooltip" class="button-tooltip" role="tooltip" aria-hidden="true"></div>
 
   <script src="./pkg/webcalculator_backend.js"></script>
@@ -1120,7 +1150,10 @@
     const memoryClearBtn = document.getElementById("memory-clear-btn");
     const displayModeSelect = document.getElementById("display-mode-select");
     const precisionInput = document.getElementById("precision-input");
+    const legalRibbonBtn = document.getElementById("legal-ribbon-btn");
     const helpRibbonBtn = document.getElementById("help-ribbon-btn");
+    const legalCloseBtn = document.getElementById("legal-close-btn");
+    const legalModal = document.getElementById("legal-modal");
     const helpCloseBtn = document.getElementById("help-close-btn");
     const helpModal = document.getElementById("help-modal");
     const helpFrame = document.getElementById("help-frame");
@@ -1188,6 +1221,7 @@
       "const-qe": "q_e",
     };
     const tooltipIdKeyMap = {
+      "legal-ribbon-btn": "legal",
       "help-ribbon-btn": "help",
       "matrix-builder-open-btn": "push_matrix",
       "apply-a-size-btn": "apply_size",
@@ -1970,6 +2004,14 @@
       closeModal(helpModal);
     }
 
+    function openLegal() {
+      openModal(legalModal);
+    }
+
+    function closeLegal() {
+      closeModal(legalModal);
+    }
+
     function openMatrixBuilder() {
       openModal(matrixBuilderModal);
     }
@@ -2380,6 +2422,11 @@
       closeRibbon();
     });
 
+    legalRibbonBtn.addEventListener("click", () => openLegal());
+    legalCloseBtn.addEventListener("click", () => closeLegal());
+    legalModal.addEventListener("click", (event) => {
+      if (event.target === legalModal) closeLegal();
+    });
     helpRibbonBtn.addEventListener("click", () => openHelp());
     helpCloseBtn.addEventListener("click", () => closeHelp());
     helpModal.addEventListener("click", (event) => {
@@ -2388,6 +2435,11 @@
 
     window.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
+        if (legalModal.classList.contains("open")) {
+          event.preventDefault();
+          closeLegal();
+          return;
+        }
         if (helpModal.classList.contains("open")) {
           event.preventDefault();
           closeHelp();
@@ -2519,7 +2571,7 @@
         runtimeHint.textContent = "WASM runtime unavailable";
         setError("runtime unavailable");
         console.error(error);
-        for (const button of document.querySelectorAll("button:not(#help-ribbon-btn):not(#help-close-btn)")) {
+        for (const button of document.querySelectorAll("button:not(#help-ribbon-btn):not(#help-close-btn):not(#legal-ribbon-btn):not(#legal-close-btn)")) {
           button.disabled = true;
         }
       }
