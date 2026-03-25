@@ -2,6 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::script::{
+    ScriptResponse, run_script_line_text, run_script_text,
+};
 use crate::{AngleMode, CalcError, CalcState, Calculator, Complex, DisplayMode, Matrix, Value};
 
 /// Serialized value payload used by API requests/responses.
@@ -1092,6 +1095,58 @@ impl CalculatorApi {
         self.wrap(result)
     }
 
+    /// Executes a batch script.
+    pub fn run_script(&mut self, script_text: &str) -> ScriptResponse {
+        let before = self.calculator.state().clone();
+        let mut working = self.clone();
+        match run_script_text(&mut working, script_text) {
+            Ok(outcome) => {
+                self.calculator = working.calculator;
+                self.calculator.set_undo_state(before);
+                ScriptResponse {
+                    ok: true,
+                    state: self.snapshot(),
+                    error: None,
+                    warning: outcome.warning,
+                    transcript: outcome.transcript,
+                }
+            }
+            Err(failure) => ScriptResponse {
+                ok: false,
+                state: self.snapshot(),
+                error: Some(failure.error),
+                warning: None,
+                transcript: failure.transcript,
+            },
+        }
+    }
+
+    /// Executes a single interactive script line.
+    pub fn run_script_line(&mut self, script_line: &str) -> ScriptResponse {
+        let before = self.calculator.state().clone();
+        let mut working = self.clone();
+        match run_script_line_text(&mut working, script_line) {
+            Ok(outcome) => {
+                self.calculator = working.calculator;
+                self.calculator.set_undo_state(before);
+                ScriptResponse {
+                    ok: true,
+                    state: self.snapshot(),
+                    error: None,
+                    warning: outcome.warning,
+                    transcript: outcome.transcript,
+                }
+            }
+            Err(failure) => ScriptResponse {
+                ok: false,
+                state: self.snapshot(),
+                error: Some(failure.error),
+                warning: None,
+                transcript: failure.transcript,
+            },
+        }
+    }
+
     fn success(&self) -> ApiResponse {
         ApiResponse {
             ok: true,
@@ -2046,6 +2101,18 @@ mod wasm {
         /// Executes the `memory_clear` operation.
         pub fn memory_clear(&mut self, register: usize) -> String {
             serde_json::to_string(&self.inner.memory_clear(register))
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `run_script` operation.
+        pub fn run_script(&mut self, script_text: &str) -> String {
+            serde_json::to_string(&self.inner.run_script(script_text))
+                .expect("response serialization should succeed")
+        }
+
+        /// Executes the `run_script_line` operation.
+        pub fn run_script_line(&mut self, script_line: &str) -> String {
+            serde_json::to_string(&self.inner.run_script_line(script_line))
                 .expect("response serialization should succeed")
         }
     }

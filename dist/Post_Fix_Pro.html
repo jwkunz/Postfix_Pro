@@ -613,6 +613,99 @@
       margin: 0;
     }
 
+    .scripting-layout {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.3fr 0.9fr;
+    }
+
+    .scripting-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(12, 18, 30, 0.72);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .scripting-card h3 {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .scripting-card textarea,
+    .scripting-card pre {
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+    }
+
+    .script-editor {
+      min-height: 260px;
+      resize: vertical;
+    }
+
+    .script-actions,
+    .script-launchers {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .script-actions button,
+    .script-launchers button {
+      min-height: 44px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+
+    .script-saved-row,
+    .script-console-entry {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr 1fr auto auto;
+      align-items: center;
+    }
+
+    .script-console-entry {
+      grid-template-columns: 1fr auto;
+    }
+
+    .script-status {
+      min-height: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .script-status.error {
+      color: var(--danger);
+    }
+
+    .script-console-output {
+      min-height: 240px;
+      max-height: 340px;
+      overflow: auto;
+      margin: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-2);
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .script-help {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .script-help p {
+      margin: 0;
+    }
+
     .button-tooltip {
       position: fixed;
       z-index: 1200;
@@ -732,6 +825,7 @@
         <button class="ribbon-tab" type="button" data-ribbon-target="vector">Vector</button>
         <button class="ribbon-tab" type="button" data-ribbon-target="matrix">Matrix</button>
         <button class="ribbon-tab" type="button" data-ribbon-target="memory">Memory</button>
+        <button class="ribbon-tab" type="button" data-ribbon-target="scripting">Scripting</button>
         <button class="ribbon-tab" type="button" data-ribbon-target="preferences">Preferences</button>
         <button class="ribbon-tab" type="button" id="legal-ribbon-btn">Legal</button>
         <button class="ribbon-tab" type="button" id="help-ribbon-btn">Help</button>
@@ -923,6 +1017,21 @@
           </div>
         </section>
 
+        <section class="ribbon-panel" data-ribbon-panel="scripting">
+          <div class="ribbon-panel-head">
+            <h2 class="ribbon-panel-title">Scripting</h2>
+          </div>
+          <div class="script-launchers">
+            <button class="fn" type="button" id="scripting-open-editor-btn">open editor</button>
+            <button class="fn" type="button" id="scripting-open-console-btn">open console</button>
+            <button class="op" type="button" id="scripting-run-script-btn">run current</button>
+            <button class="fn" type="button" id="scripting-save-script-btn">save current</button>
+            <button class="fn" type="button" id="scripting-load-script-btn">load saved</button>
+            <button class="fn" type="button" id="scripting-import-script-btn">import / export</button>
+            <button class="fn" type="button" id="scripting-help-btn">scripting guide</button>
+          </div>
+        </section>
+
         <section class="ribbon-panel" data-ribbon-panel="preferences">
           <div class="ribbon-panel-head">
             <h2 class="ribbon-panel-title">Preferences</h2>
@@ -1087,6 +1196,57 @@
     </div>
   </div>
 
+  <div class="modal" id="scripting-modal" aria-hidden="true">
+    <div class="panel modal-dialog" role="dialog" aria-modal="true" aria-label="Scripting workspace">
+      <div class="modal-header">
+        <span>Scripting Workspace</span>
+        <button class="danger" type="button" id="scripting-close-btn">close</button>
+      </div>
+      <div class="modal-body">
+        <div class="scripting-layout">
+          <section class="scripting-card">
+            <h3>Batch Script</h3>
+            <textarea id="script-editor" class="script-editor" spellcheck="false" aria-label="Script editor"># Example script
+2 3 add
+4 mul</textarea>
+            <div class="script-actions">
+              <button class="op" type="button" id="script-run-btn">run script</button>
+              <button class="fn" type="button" id="script-save-btn">save</button>
+              <button class="fn" type="button" id="script-export-btn">export</button>
+            </div>
+            <div class="script-saved-row">
+              <input id="script-save-name" type="text" value="example_script" aria-label="Script save name">
+              <select id="script-saved-select" aria-label="Saved scripts"></select>
+              <button class="fn" type="button" id="script-load-btn">load</button>
+              <button class="danger" type="button" id="script-delete-btn">delete</button>
+            </div>
+            <input id="script-import-input" type="file" accept=".txt,.pfp,.script,text/plain" class="hidden" aria-label="Import script file">
+            <div id="script-status" class="script-status"></div>
+          </section>
+
+          <section class="scripting-card">
+            <h3>Interactive Console</h3>
+            <pre id="script-console-output" class="script-console-output">Ready.</pre>
+            <div class="script-console-entry">
+              <input id="script-console-input" type="text" spellcheck="false" autocomplete="off" aria-label="Script console input">
+              <button class="op" type="button" id="script-console-run-btn">run line</button>
+            </div>
+            <div class="script-actions">
+              <button class="fn" type="button" id="script-example-btn">insert example</button>
+              <button class="fn" type="button" id="script-guide-btn">guide</button>
+              <button class="fn" type="button" id="script-import-btn">import</button>
+              <button class="fn" type="button" id="script-console-clear-btn">clear log</button>
+            </div>
+            <div class="script-help">
+              <p>Use command-style RPN scripts. Numbers push automatically, commands use current calculator names, and memory-backed variables use `store A`, `recall A`, and `memclear A`.</p>
+              <p>Examples: `2 3 add`, `12 store A clear_all recall A`, `display sci`, `precision 8`, `[1 2; 3 4] determinant`.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="legal-modal" aria-hidden="true">
     <div class="panel modal-dialog" role="dialog" aria-modal="true" aria-label="Legal information">
       <div class="modal-header">
@@ -1095,7 +1255,7 @@
       </div>
       <div class="modal-body">
         <div class="legal-copy">
-          <p>Version 5.1.0</p>
+          <p>Version 6.0.0</p>
           <p>Copyright 2026 Numerius Engineering LLC</p>
           <p>For support contact numerius.engineering@gmail.com</p>
           <p>Distributed under terms of the MIT License.</p>
@@ -1148,8 +1308,34 @@
     const memoryStoreBtn = document.getElementById("memory-store-btn");
     const memoryRecallBtn = document.getElementById("memory-recall-btn");
     const memoryClearBtn = document.getElementById("memory-clear-btn");
+    const scriptingOpenEditorBtn = document.getElementById("scripting-open-editor-btn");
+    const scriptingOpenConsoleBtn = document.getElementById("scripting-open-console-btn");
+    const scriptingRunScriptBtn = document.getElementById("scripting-run-script-btn");
+    const scriptingSaveScriptBtn = document.getElementById("scripting-save-script-btn");
+    const scriptingLoadScriptBtn = document.getElementById("scripting-load-script-btn");
+    const scriptingImportScriptBtn = document.getElementById("scripting-import-script-btn");
+    const scriptingHelpBtn = document.getElementById("scripting-help-btn");
     const displayModeSelect = document.getElementById("display-mode-select");
     const precisionInput = document.getElementById("precision-input");
+    const scriptingModal = document.getElementById("scripting-modal");
+    const scriptingCloseBtn = document.getElementById("scripting-close-btn");
+    const scriptEditor = document.getElementById("script-editor");
+    const scriptRunBtn = document.getElementById("script-run-btn");
+    const scriptSaveBtn = document.getElementById("script-save-btn");
+    const scriptExportBtn = document.getElementById("script-export-btn");
+    const scriptSaveNameInput = document.getElementById("script-save-name");
+    const scriptSavedSelect = document.getElementById("script-saved-select");
+    const scriptLoadBtn = document.getElementById("script-load-btn");
+    const scriptDeleteBtn = document.getElementById("script-delete-btn");
+    const scriptStatus = document.getElementById("script-status");
+    const scriptImportInput = document.getElementById("script-import-input");
+    const scriptConsoleOutput = document.getElementById("script-console-output");
+    const scriptConsoleInput = document.getElementById("script-console-input");
+    const scriptConsoleRunBtn = document.getElementById("script-console-run-btn");
+    const scriptExampleBtn = document.getElementById("script-example-btn");
+    const scriptGuideBtn = document.getElementById("script-guide-btn");
+    const scriptImportBtn = document.getElementById("script-import-btn");
+    const scriptConsoleClearBtn = document.getElementById("script-console-clear-btn");
     const legalRibbonBtn = document.getElementById("legal-ribbon-btn");
     const helpRibbonBtn = document.getElementById("help-ribbon-btn");
     const legalCloseBtn = document.getElementById("legal-close-btn");
@@ -1174,13 +1360,20 @@
     let tooltipMap = new Map();
     let tooltipTimer = null;
     let tooltipTarget = null;
+    let scriptConsoleMode = "editor";
     const tooltipDelayMs = 2000;
+    const SCRIPT_STORAGE_KEY = "post_fix_pro_scripts_v1";
     const stackRoleLabels = new Map();
     const decompositionRoleMap = {
       qr: ["Q", "R"],
       lu: ["P", "L", "U"],
       svd: ["U", "S", "Vt"],
       evd: ["V", "D"],
+    };
+    const SCRIPT_EXAMPLES = {
+      arithmetic: "# Arithmetic\n2 3 add\n4 mul",
+      memory: "# Memory-backed variables\n12 store A\nclear_all\nrecall A\n8 add",
+      matrix: "# Matrix example\n[1 2; 3 4]\ndeterminant"
     };
     const tooltipActionKeyMap = {
       "toggle-angle": "deg_rad",
@@ -1221,6 +1414,13 @@
       "const-qe": "q_e",
     };
     const tooltipIdKeyMap = {
+      "scripting-open-editor-btn": "scripting",
+      "scripting-open-console-btn": "scripting",
+      "scripting-run-script-btn": "run_script",
+      "scripting-save-script-btn": "save_script",
+      "scripting-load-script-btn": "load_script",
+      "scripting-import-script-btn": "import_script",
+      "scripting-help-btn": "scripting",
       "legal-ribbon-btn": "legal",
       "help-ribbon-btn": "help",
       "matrix-builder-open-btn": "push_matrix",
@@ -1992,16 +2192,32 @@
       modal.setAttribute("aria-hidden", "true");
     }
 
-    function openHelp() {
-      if (!helpLoaded) {
-        helpFrame.src = "./help.md";
-        helpLoaded = true;
-      }
+    function openHelpSection(anchor = "") {
+      helpFrame.src = anchor ? `./help.md#${anchor}` : "./help.md";
+      helpLoaded = true;
       openModal(helpModal);
+    }
+
+    function openHelp() {
+      openHelpSection("");
     }
 
     function closeHelp() {
       closeModal(helpModal);
+    }
+
+    function openScriptingWorkspace(mode = "editor") {
+      scriptConsoleMode = mode;
+      openModal(scriptingModal);
+      if (mode === "console") {
+        scriptConsoleInput.focus();
+      } else {
+        scriptEditor.focus();
+      }
+    }
+
+    function closeScriptingWorkspace() {
+      closeModal(scriptingModal);
     }
 
     function openLegal() {
@@ -2044,6 +2260,185 @@
       const precision = clampPrecision(precisionInput.value);
       precisionInput.value = String(precision);
       call("set_precision", precision);
+    }
+
+    function readSavedScripts() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(SCRIPT_STORAGE_KEY) || "{}");
+        if (parsed && typeof parsed === "object") {
+          return parsed;
+        }
+      } catch (_) {
+      }
+      return {};
+    }
+
+    function writeSavedScripts(scripts) {
+      localStorage.setItem(SCRIPT_STORAGE_KEY, JSON.stringify(scripts));
+    }
+
+    function refreshSavedScripts(selectedName = "") {
+      const scripts = readSavedScripts();
+      const names = Object.keys(scripts).sort();
+      scriptSavedSelect.innerHTML = "";
+      if (!names.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No saved scripts";
+        scriptSavedSelect.appendChild(option);
+        scriptSavedSelect.value = "";
+        return;
+      }
+      for (const name of names) {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        scriptSavedSelect.appendChild(option);
+      }
+      scriptSavedSelect.value = selectedName && scripts[selectedName] ? selectedName : names[0];
+    }
+
+    function setScriptStatus(message, isError = false) {
+      scriptStatus.textContent = message || "";
+      scriptStatus.classList.toggle("error", Boolean(isError && message));
+    }
+
+    function appendScriptConsole(text) {
+      const current = scriptConsoleOutput.textContent || "";
+      scriptConsoleOutput.textContent = current === "Ready." ? text : `${current}\n${text}`;
+      scriptConsoleOutput.scrollTop = scriptConsoleOutput.scrollHeight;
+    }
+
+    function renderScriptTranscript(transcript, append = false) {
+      const lines = (transcript || []).map((entry) => {
+        const status = entry.ok ? "ok" : "err";
+        const message = entry.message ? ` :: ${entry.message}` : "";
+        return `[L${entry.line}] ${status} ${entry.command}${message}`;
+      });
+      if (!lines.length) return;
+      const text = lines.join("\n");
+      if (append) appendScriptConsole(text);
+      else scriptConsoleOutput.textContent = text;
+    }
+
+    function formatScriptError(error) {
+      if (!error) return "script execution failed";
+      const token = error.token ? ` near ${error.token}` : "";
+      return `line ${error.line}, col ${error.column}: ${error.message}${token}`;
+    }
+
+    function callScript(methodName, scriptText) {
+      if (!wasmCalc || typeof wasmCalc[methodName] !== "function") {
+        setError(`runtime method missing: ${methodName}`);
+        return null;
+      }
+      let response = null;
+      try {
+        response = JSON.parse(wasmCalc[methodName](scriptText));
+      } catch (_) {
+        response = {
+          ok: false,
+          state: lastState || { stack: [], entry_buffer: "", angle_mode: "rad", display_mode: "fix", precision: 6 },
+          error: { message: "invalid JSON from runtime" },
+          warning: null,
+          transcript: [],
+        };
+      }
+      renderState(response.state);
+      if (response.ok) {
+        setError(response.warning || "");
+        setScriptStatus(response.warning || "script completed");
+      } else {
+        const message = formatScriptError(response.error);
+        setError(message);
+        setScriptStatus(message, true);
+      }
+      return response;
+    }
+
+    function runCurrentScript() {
+      if (!wasmCalc) return;
+      const response = callScript("run_script", scriptEditor.value);
+      if (!response) return;
+      renderScriptTranscript(response.transcript, false);
+    }
+
+    function runConsoleLine() {
+      if (!wasmCalc) return;
+      const line = String(scriptConsoleInput.value || "").trim();
+      if (!line) return;
+      appendScriptConsole(`> ${line}`);
+      const response = callScript("run_script_line", line);
+      if (!response) return;
+      renderScriptTranscript(response.transcript, true);
+      if (!response.ok) {
+        appendScriptConsole(`! ${formatScriptError(response.error)}`);
+      }
+      scriptConsoleInput.value = "";
+    }
+
+    function saveCurrentScript() {
+      const name = String(scriptSaveNameInput.value || "").trim();
+      if (!name) {
+        setScriptStatus("script name is required to save", true);
+        return;
+      }
+      const scripts = readSavedScripts();
+      scripts[name] = scriptEditor.value;
+      writeSavedScripts(scripts);
+      refreshSavedScripts(name);
+      setScriptStatus(`saved script: ${name}`);
+    }
+
+    function loadSelectedScript() {
+      const scripts = readSavedScripts();
+      const name = scriptSavedSelect.value;
+      if (!name || !scripts[name]) {
+        setScriptStatus("no saved script selected", true);
+        return;
+      }
+      scriptEditor.value = scripts[name];
+      scriptSaveNameInput.value = name;
+      setScriptStatus(`loaded script: ${name}`);
+    }
+
+    function deleteSelectedScript() {
+      const scripts = readSavedScripts();
+      const name = scriptSavedSelect.value;
+      if (!name || !scripts[name]) {
+        setScriptStatus("no saved script selected", true);
+        return;
+      }
+      delete scripts[name];
+      writeSavedScripts(scripts);
+      refreshSavedScripts("");
+      setScriptStatus(`deleted script: ${name}`);
+    }
+
+    function exportCurrentScript() {
+      const name = String(scriptSaveNameInput.value || "script").trim() || "script";
+      const blob = new Blob([scriptEditor.value], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${name}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setScriptStatus(`exported script: ${name}.txt`);
+    }
+
+    function importScriptText(text) {
+      scriptEditor.value = String(text || "");
+      setScriptStatus("imported script");
+    }
+
+    function insertExampleScript() {
+      const next = scriptConsoleMode === "console" ? SCRIPT_EXAMPLES.memory : SCRIPT_EXAMPLES.arithmetic;
+      scriptEditor.value = next;
+      setScriptStatus("inserted example script");
+      scriptEditor.focus();
     }
 
     function handleAction(action) {
@@ -2412,6 +2807,39 @@
       closeRibbon();
     });
 
+    scriptingOpenEditorBtn.addEventListener("click", () => {
+      openScriptingWorkspace("editor");
+      closeRibbon();
+    });
+    scriptingOpenConsoleBtn.addEventListener("click", () => {
+      openScriptingWorkspace("console");
+      closeRibbon();
+    });
+    scriptingRunScriptBtn.addEventListener("click", () => {
+      openScriptingWorkspace("editor");
+      runCurrentScript();
+      closeRibbon();
+    });
+    scriptingSaveScriptBtn.addEventListener("click", () => {
+      openScriptingWorkspace("editor");
+      saveCurrentScript();
+      closeRibbon();
+    });
+    scriptingLoadScriptBtn.addEventListener("click", () => {
+      openScriptingWorkspace("editor");
+      loadSelectedScript();
+      closeRibbon();
+    });
+    scriptingImportScriptBtn.addEventListener("click", () => {
+      openScriptingWorkspace("editor");
+      scriptImportInput.click();
+      closeRibbon();
+    });
+    scriptingHelpBtn.addEventListener("click", () => {
+      openHelpSection("scripting-guide");
+      closeRibbon();
+    });
+
     stackVisibleCountInput.addEventListener("input", () => applyVisibleStackCountFromInput());
     displayModeSelect.addEventListener("change", () => {
       applyDisplayModePreference();
@@ -2427,6 +2855,40 @@
     legalModal.addEventListener("click", (event) => {
       if (event.target === legalModal) closeLegal();
     });
+    scriptingCloseBtn.addEventListener("click", () => closeScriptingWorkspace());
+    scriptingModal.addEventListener("click", (event) => {
+      if (event.target === scriptingModal) closeScriptingWorkspace();
+    });
+    scriptRunBtn.addEventListener("click", () => runCurrentScript());
+    scriptSaveBtn.addEventListener("click", () => saveCurrentScript());
+    scriptExportBtn.addEventListener("click", () => exportCurrentScript());
+    scriptLoadBtn.addEventListener("click", () => loadSelectedScript());
+    scriptDeleteBtn.addEventListener("click", () => deleteSelectedScript());
+    scriptConsoleRunBtn.addEventListener("click", () => runConsoleLine());
+    scriptConsoleInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runConsoleLine();
+      }
+    });
+    scriptExampleBtn.addEventListener("click", () => insertExampleScript());
+    scriptGuideBtn.addEventListener("click", () => openHelpSection("scripting-guide"));
+    scriptImportBtn.addEventListener("click", () => scriptImportInput.click());
+    scriptConsoleClearBtn.addEventListener("click", () => {
+      scriptConsoleOutput.textContent = "Ready.";
+      setScriptStatus("");
+    });
+    scriptImportInput.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      if (!file) return;
+      try {
+        importScriptText(await file.text());
+      } catch (_) {
+        setScriptStatus("failed to import script", true);
+      } finally {
+        scriptImportInput.value = "";
+      }
+    });
     helpRibbonBtn.addEventListener("click", () => openHelp());
     helpCloseBtn.addEventListener("click", () => closeHelp());
     helpModal.addEventListener("click", (event) => {
@@ -2435,6 +2897,11 @@
 
     window.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
+        if (scriptingModal.classList.contains("open")) {
+          event.preventDefault();
+          closeScriptingWorkspace();
+          return;
+        }
         if (legalModal.classList.contains("open")) {
           event.preventDefault();
           closeLegal();
@@ -2563,6 +3030,7 @@
 
         wasmCalc = new wasm_bindgen.WasmCalculator();
         applyHypModeUI();
+        refreshSavedScripts("");
         runtimeHint.textContent = "WASM runtime loaded";
         const initial = JSON.parse(wasmCalc.snapshot_json());
         renderState(initial);

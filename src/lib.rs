@@ -4,6 +4,7 @@
 
 pub mod api;
 pub mod calculator;
+pub mod script;
 pub mod types;
 
 /// Stateful calculator engine and operation implementations.

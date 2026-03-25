@@ -235,6 +235,68 @@
     }
 
     #[test]
+    fn batch_script_executes_against_calculator_state() {
+        let mut api = CalculatorApi::new();
+
+        let response = api.run_script(
+            r#"
+            2 3 add
+            4 mul
+            "#,
+        );
+
+        assert!(response.ok);
+        assert_eq!(response.state.stack, vec![ApiValue::Real { value: 20.0 }]);
+        assert!(response.transcript.len() >= 4);
+    }
+
+    #[test]
+    fn interactive_script_line_updates_state() {
+        let mut api = CalculatorApi::new();
+
+        let response = api.run_script_line("9 3 div");
+
+        assert!(response.ok);
+        assert_eq!(response.state.stack, vec![ApiValue::Real { value: 3.0 }]);
+    }
+
+    #[test]
+    fn script_can_use_memory_registers_as_variables() {
+        let mut api = CalculatorApi::new();
+
+        let response = api.run_script(
+            r#"
+            12 store A
+            clear_all
+            recall A
+            8 add
+            "#,
+        );
+
+        assert!(response.ok);
+        assert_eq!(response.state.stack, vec![ApiValue::Real { value: 20.0 }]);
+    }
+
+    #[test]
+    fn failed_script_preserves_original_state() {
+        let mut api = CalculatorApi::new();
+        api.push_real(7.0);
+
+        let response = api.run_script(
+            r#"
+            5 add
+            unknown_command
+            "#,
+        );
+
+        assert!(!response.ok);
+        assert_eq!(response.state.stack, vec![ApiValue::Real { value: 7.0 }]);
+        let error = response.error.expect("script error expected");
+        assert_eq!(error.code, "unknown_command");
+        assert_eq!(error.line, 3);
+    }
+
+    #[test]
     fn push_matrix_adds_matrix_to_stack() {
         let mut api = CalculatorApi::new();
         let matrix = MatrixInput {
